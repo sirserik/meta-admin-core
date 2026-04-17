@@ -1,103 +1,18 @@
 # meta/admin-core
 
-Headless admin panel core for META sites. Provides a **Resource API** —
-new admin modules are registered with a single call, without writing a
-controller or Vue pages for the common case.
-
-## Installation
-
-### 1. Add as Composer package (local path for now)
-
-In your consumer app's `composer.json`:
-
-```json
-{
-  "repositories": [
-    { "type": "path", "url": "../meta-admin-core" }
-  ],
-  "require": {
-    "meta/admin-core": "dev-main"
-  }
-}
-```
-
-Then:
-```bash
-composer require meta/admin-core:dev-main
-```
-
-### 2. Install frontend deps
-
-```bash
-npm install vue @inertiajs/vue3 @vitejs/plugin-vue \
-            @tiptap/vue-3 @tiptap/starter-kit @tiptap/extension-link \
-            @tiptap/extension-image @tiptap/extension-underline \
-            @fontsource/inter @fortawesome/fontawesome-free
-```
-
-### 3. Publish views + config
-
-```bash
-php artisan vendor:publish --tag=admin-core-views
-php artisan vendor:publish --tag=admin-core-config
-```
-
-### 4. Register HandleInertiaRequests middleware
-
-In `bootstrap/app.php`:
-```php
-$middleware->web(append: [
-    \Meta\AdminCore\Http\Middleware\HandleInertiaRequests::class,
-]);
-```
-
-### 5. Vite config
-
-```js
-import vue from '@vitejs/plugin-vue';
-
-export default defineConfig({
-    plugins: [
-        laravel({
-            input: ['resources/css/admin-spa.css', 'resources/js/admin-spa.js'],
-            refresh: true,
-        }),
-        vue(),
-    ],
-    resolve: {
-        alias: {
-            '@admin-core': '/vendor/meta/admin-core/resources/js',
-        },
-    },
-});
-```
-
-### 6. Consumer `resources/js/admin-spa.js`
-
-```js
-import { bootAdminCore } from '@admin-core/admin-spa.js';
-import AdminLayout from '@admin-core/layouts/AdminLayout.vue';
-
-const sitePages = import.meta.glob('./admin-spa/pages/**/*.vue');
-const corePages = import.meta.glob('../../vendor/meta/admin-core/resources/js/pages/**/*.vue');
-
-bootAdminCore({ sitePages, corePages, AdminLayout, title: 'META Admin' });
-```
-
-## Usage
-
-Register resources in your `AppServiceProvider::boot()`:
+Headless admin panel core for Laravel sites. Drives a full admin SPA
+(Inertia + Vue 3 + Tiptap) from a **declarative Resource API** — new
+admin modules are added with a single call in a service provider, with
+no controller or Vue page to write for the common case.
 
 ```php
-use Meta\AdminCore\Facades\AdminCore;
-
 AdminCore::resource('articles', [
-    'model'         => \App\Models\Article::class,
-    'label'         => 'Статьи',
-    'menu'          => 'Контент',
-    'icon'          => 'fa-newspaper',
-    'image_field'   => 'featured_image',
-    'translatable'  => ['title', 'excerpt', 'content'],
+    'model'        => \App\Models\Article::class,
+    'label'        => 'Статьи',
+    'menu'         => 'Контент',
+    'icon'         => 'fa-newspaper',
+    'image_field'  => 'featured_image',
+    'translatable' => ['title', 'excerpt', 'content'],
     'fields' => [
         ['name' => 'title',   'type' => 'text',     'label' => 'Заголовок', 'required' => true],
         ['name' => 'excerpt', 'type' => 'textarea', 'label' => 'Краткое описание'],
@@ -109,135 +24,122 @@ AdminCore::resource('articles', [
         ['name' => 'published_at', 'type' => 'datetime-local', 'label' => 'Дата публикации'],
     ],
 ]);
+```
 
-AdminCore::menuItem('Бэкапы', '/admin/backup', 'fa-database', 'Система');
+That call produces:
 
-AdminCore::dashboardStat(fn () => [
-    'label' => 'Статьи',
-    'value' => \App\Models\Article::count(),
-    'icon'  => 'fa-newspaper',
+- Sidebar entry under **Контент**
+- `/admin/articles` — paginated list with search
+- `/admin/articles/create` — form with locale tabs (RU/KK/EN), Tiptap
+  editor for the `content` field, image upload, sidebar with plain
+  attributes
+- `/admin/articles/{id}/edit` — pre-filled edit form
+- Auto-generated validation from types
+- CRUD routes dispatched through a single generic controller
+- Toggle-publish action
+
+No `ArticleController`. No `Articles/Index.vue`. No
+`Articles/Form.vue`. All driven by the config.
+
+## Features
+
+- **Declarative resources** — full CRUD from one config array
+- **Translatable fields** with per-locale inputs (RU/KK/EN by default)
+- **Typed attributes** (text, email, url, number, date, select,
+  boolean, color…) with auto-generated validation
+- **Dynamic FK selects** via closure-based `options`
+- **Rich-text editing** — Tiptap / ProseMirror (replaces TinyMCE)
+- **Image uploads** — single image per resource, with storage, URL
+  helpers, delete-on-destroy
+- **Pluggable** — per-resource Vue page overrides, custom controllers,
+  mixed legacy + declarative resources
+- **Sidebar composition** — resources + ad-hoc `menuItem()` entries,
+  grouped by section, ordered
+- **Dashboard stats** — pluggable card providers
+- **Inertia + Vue 3** — modern SPA admin over a Laravel backend
+- **Package-discoverable** — drop it in, boot, go
+
+## Installation (short version)
+
+```bash
+composer require meta/admin-core:^0.3
+php artisan vendor:publish --tag=admin-core-config
+```
+
+Then set up Vite, middleware, and an entry point. Full walkthrough:
+[docs/installation.md](docs/installation.md).
+
+Register middleware in `bootstrap/app.php`:
+
+```php
+$middleware->web(append: [
+    \Meta\AdminCore\Http\Middleware\HandleInertiaRequests::class,
 ]);
 ```
 
-Routes, sidebar navigation, CRUD controller, validation rules and Vue
-pages are wired automatically. The resource URL is `/admin/{name}` and
-catches all `GET|POST|PUT|PATCH|DELETE` — no per-resource routes to
-register. To override the generic Vue page, add
-`resources/js/admin-spa/pages/{PageKey}/{Index,Form}.vue` and point
-`'page' => 'PageKey'` in the config.
+Vite entry:
 
-### Config reference
+```js
+import { bootAdminCore } from '@admin-core/admin-spa.js';
+import AdminLayout from '@admin-core/layouts/AdminLayout.vue';
 
-| Key             | Type     | Default         | Purpose                                           |
-|-----------------|----------|-----------------|---------------------------------------------------|
-| `model`         | class    | required        | Eloquent model class                              |
-| `label`         | string   | `ucfirst(name)` | Sidebar link text, page header                    |
-| `menu`          | string   | `'Контент'`     | Sidebar section grouping                          |
-| `icon`          | string   | `'fa-file'`     | FontAwesome class (without `fas` prefix)          |
-| `image_field`   | string   | `null`          | Column name holding image path (with `_url` accessor) |
-| `translatable`  | string[] | `[]`            | Field names stored via Spatie Translatable        |
-| `fields`        | array[]  | `[]`            | Translatable form fields (main area)              |
-| `attributes`    | array[]  | `[]`            | Plain (non-translatable) form fields (sidebar)    |
-| `order_by`      | array    | `['created_at' => 'desc']` | Default list ordering              |
-| `per_page`      | int      | `15`            | List pagination                                   |
-| `route_key`     | string   | model default   | Model key used in URLs (e.g. `'slug'`)            |
-| `page`          | string   | `'Resource'`    | Vue page folder (`Resource/Index.vue` etc.)       |
+const sitePages = import.meta.glob('./admin-spa/pages/**/*.vue');
+const corePages = import.meta.glob('../../vendor/meta/admin-core/resources/js/pages/**/*.vue');
 
-### Field types (translatable — `fields`)
-
-`text`, `textarea`, `editor` (Tiptap rich-text). Each locale (`ru/kk/en`)
-gets its own input, switched by `LocaleTabs`.
-
-### Attribute types (plain — `attributes`)
-
-| Type              | Renders as                   | Validation rule added    |
-|-------------------|------------------------------|--------------------------|
-| `text`            | `<input type="text">`        | `string`, `max:{max}`    |
-| `textarea`        | `<textarea>`                 | `string`                 |
-| `email`           | `<input type="email">`       | `email`                  |
-| `url`             | `<input type="url">`         | `url`, `max:{max}`       |
-| `number`          | `<input type="number">`      | `numeric`                |
-| `date`            | `<input type="date">`        | `date`                   |
-| `datetime-local`  | `<input type="datetime-local">` | `date`                |
-| `color`           | `<input type="color">`       | `string`                 |
-| `boolean`         | `<input type="checkbox">`    | `boolean`                |
-| `select`          | `<select>`                   | `in:<option values>`     |
-
-Per-attribute modifiers: `required`, `unique`, `max`, `placeholder`,
-`help`, `options` (for `select`).
-
-### Dynamic FK selects (closure-based `options`)
-
-`options` can be a closure — it's evaluated on each request so the list
-stays fresh:
-
-```php
-AdminCore::resource('teachers', [
-    'model' => Teacher::class,
-    // ...
-    'attributes' => [
-        ['name' => 'school_id', 'type' => 'select', 'required' => true,
-            'options' => fn () => School::orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn ($s) => ['value' => $s->id, 'label' => $s->name])
-                ->all()],
-    ],
-]);
+bootAdminCore({ sitePages, corePages, AdminLayout, title: 'My Admin' });
 ```
 
-### Unique validation
+## Documentation
 
-```php
-['name' => 'slug', 'type' => 'text', 'unique' => true],
-```
+Full reference lives in [`docs/`](docs/README.md):
 
-Generates `unique:{table},{column},{currentId}` — excludes current row on
-update automatically.
+### Getting started
+- [Installation](docs/installation.md)
+- [Quickstart: first resource](docs/quickstart.md)
 
-## Migration from legacy Spa controllers
+### Core concepts
+- [Resource API reference](docs/resources.md)
+- [Translatable fields](docs/fields.md)
+- [Attribute types](docs/attributes.md)
+- [Dynamic FK selects](docs/select-options.md)
+- [Images](docs/images.md)
+- [Navigation & dashboard](docs/navigation.md)
+- [Validation](docs/validation.md)
+- [Routing](docs/routing.md)
 
-If you already have `App\Http\Controllers\Admin\Spa\FooController extends
-BaseCrudController`, migration is usually a 1:1 translation:
+### Customisation
+- [Custom Vue pages](docs/custom-pages.md)
+- [Extending the core](docs/extending.md)
 
-1. Remove the explicit `/foo` routes from your route file.
-2. Delete the controller + its Vue pages.
-3. Add `AdminCore::resource('foo', [...])` to `AppServiceProvider`.
+### Reference
+- [Architecture](docs/architecture.md)
+- [Migration from legacy Spa controllers](docs/migration.md)
+- [Upgrade guide](docs/upgrade.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
-The catch-all `/admin/{resource}` route will take over. Named routes like
-`route('admin.foo.index')` will no longer resolve — replace with plain
-`url('/admin/foo')` or `/admin/foo`.
+### Contributing
+- [Package development](docs/development.md)
 
-## Architecture
+## Requirements
 
-```
-meta/admin-core/                  <- this package
-├── src/
-│   ├── AdminCore.php              <- registry singleton
-│   ├── Facades/AdminCore.php
-│   ├── AdminCoreServiceProvider.php
-│   └── Http/
-│       ├── Controllers/
-│       │   ├── DashboardController.php
-│       │   └── ResourceController.php   <- generic CRUD
-│       └── Middleware/
-│           └── HandleInertiaRequests.php
-├── routes/admin.php                    <- auto-loaded
-├── resources/
-│   ├── views/app.blade.php             <- Inertia root
-│   ├── js/
-│   │   ├── admin-spa.js                <- bootAdminCore()
-│   │   ├── layouts/AdminLayout.vue
-│   │   ├── components/
-│   │   │   ├── RichTextEditor.vue      <- Tiptap
-│   │   │   ├── TranslatableField.vue
-│   │   │   ├── LocaleTabs.vue
-│   │   │   ├── PageHeader.vue
-│   │   │   └── Pagination.vue
-│   │   └── pages/
-│   │       ├── Dashboard.vue
-│   │       └── Resource/
-│   │           ├── Index.vue           <- generic list
-│   │           └── Form.vue            <- generic create/edit
-│   └── css/admin-spa.css
-└── config/admin-core.php               <- publishable config
-```
+| Stack                       | Version                        |
+|-----------------------------|--------------------------------|
+| PHP                         | `^8.2`                         |
+| Laravel                     | `^11.0 \|\| ^12.0`             |
+| inertiajs/inertia-laravel   | `^2.0 \|\| ^3.0`               |
+| Node.js                     | `^18`                          |
+| Vue                         | `^3.4`                         |
+| Vite                        | `^5` or `^6`                   |
+
+## Status
+
+v0.x — in active use by META University sites. Config shape is stable
+within `0.2+` but breaking changes may still happen at minor-version
+bumps until `1.0`.
+
+See [CHANGELOG](CHANGELOG.md) for release history.
+
+## License
+
+Proprietary. Available under the VCS at
+[sirserik/meta-admin-core](https://github.com/sirserik/meta-admin-core).

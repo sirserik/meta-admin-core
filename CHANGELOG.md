@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-04-18
+
+### Added
+- **Full documentation suite** in `docs/` (17 files, ~3600 lines):
+  installation, quickstart, resource API reference, translatable fields,
+  attribute types (with per-type validation rules), dynamic FK selects,
+  images, navigation & dashboard, validation, routing, custom Vue pages,
+  extending the core, architecture diagrams, migration from legacy Spa
+  controllers, upgrade guide between versions, troubleshooting, package
+  development.
+- Top-level `README.md` rewritten as concise landing page with TOC
+  linking to `docs/`.
+
+### Changed
+- No code changes. Docs-only release.
+
 ## [0.3.0] — 2026-04-18
 
 ### Added
