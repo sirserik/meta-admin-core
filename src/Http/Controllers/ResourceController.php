@@ -49,7 +49,7 @@ class ResourceController extends Controller
             'resource'    => $config['name'],
             'filters'     => $filters,
             'fields'      => $config['fields'],
-            'attributes'  => $config['attributes'],
+            'attributes'  => $this->resolveAttributeOptions($config['attributes']),
         ]);
     }
 
@@ -61,7 +61,7 @@ class ResourceController extends Controller
             'title'       => 'Новый: ' . $config['label'],
             'item'        => null,
             'fields'      => $config['fields'],
-            'attributes'  => $config['attributes'],
+            'attributes'  => $this->resolveAttributeOptions($config['attributes']),
             'locales'     => self::LOCALES,
             'resource'    => $config['name'],
             'image_field' => $config['image_field'],
@@ -78,12 +78,28 @@ class ResourceController extends Controller
             'title'       => 'Редактирование',
             'item'        => $this->presentForm($m, $config),
             'fields'      => $config['fields'],
-            'attributes'  => $config['attributes'],
+            'attributes'  => $this->resolveAttributeOptions($config['attributes']),
             'locales'     => self::LOCALES,
             'resource'    => $config['name'],
             'image_field' => $config['image_field'],
             'is_edit'     => true,
         ]);
+    }
+
+    /**
+     * Resolve closure-based `options` on select attributes at request time.
+     * Enables dynamic FK selects:
+     *   ['type' => 'select', 'options' => fn () => School::pluck('name','id')
+     *       ->map(fn($l,$v) => ['value'=>$v, 'label'=>$l])->values()->all()]
+     */
+    protected function resolveAttributeOptions(array $attributes): array
+    {
+        return array_map(function ($a) {
+            if (($a['type'] ?? '') === 'select' && isset($a['options']) && is_callable($a['options'])) {
+                $a['options'] = call_user_func($a['options']);
+            }
+            return $a;
+        }, $attributes);
     }
 
     public function store(Request $request, string $resource): RedirectResponse
@@ -229,7 +245,7 @@ class ResourceController extends Controller
             'datetime-local' => "{$base}|date",
             'boolean'   => "nullable|boolean",
             'select'    => isset($a['options']) && $a['options']
-                ? "{$base}|in:" . implode(',', array_column($a['options'], 'value'))
+                ? "{$base}|in:" . implode(',', array_column(is_callable($a['options']) ? call_user_func($a['options']) : $a['options'], 'value'))
                 : "{$base}|string",
             default     => "{$base}|string|max:" . ($a['max'] ?? 500),
         };
