@@ -1,0 +1,34 @@
+{
+    "name": "meta/admin-core",
+    "description": "Headless admin panel core for META University sites (Inertia + Vue 3 + Tiptap). Provides base Inertia controllers, Resource API, and reusable Vue components.",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        { "name": "META University", "email": "dev@meta.edu.kz" }
+    ],
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0|^12.0",
+        "inertiajs/inertia-laravel": "^2.0|^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Meta\\AdminCore\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Meta\\AdminCore\\AdminCoreServiceProvider"
+            ],
+            "aliases": {
+                "AdminCore": "Meta\\AdminCore\\Facades\\AdminCore"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
