@@ -44,11 +44,12 @@ class ResourceController extends Controller
         $paginator->getCollection()->transform(fn (Model $m) => $this->presentRow($m, $config));
 
         return Inertia::render($config['page'] . '/Index', [
-            'title'    => $config['label'],
-            'items'    => $paginator,
-            'resource' => $config['name'],
-            'filters'  => $filters,
-            'fields'   => $config['fields'],
+            'title'       => $config['label'],
+            'items'       => $paginator,
+            'resource'    => $config['name'],
+            'filters'     => $filters,
+            'fields'      => $config['fields'],
+            'attributes'  => $config['attributes'],
         ]);
     }
 
@@ -57,12 +58,14 @@ class ResourceController extends Controller
         $config = $this->config($resource);
 
         return Inertia::render($config['page'] . '/Form', [
-            'title'    => 'Новый: ' . $config['label'],
-            'item'     => null,
-            'fields'   => $config['fields'],
-            'locales'  => self::LOCALES,
-            'resource' => $config['name'],
-            'is_edit'  => false,
+            'title'       => 'Новый: ' . $config['label'],
+            'item'        => null,
+            'fields'      => $config['fields'],
+            'attributes'  => $config['attributes'],
+            'locales'     => self::LOCALES,
+            'resource'    => $config['name'],
+            'image_field' => $config['image_field'],
+            'is_edit'     => false,
         ]);
     }
 
@@ -72,12 +75,14 @@ class ResourceController extends Controller
         $m = $this->findModel($config, $id);
 
         return Inertia::render($config['page'] . '/Form', [
-            'title'    => 'Редактирование',
-            'item'     => $this->presentForm($m, $config),
-            'fields'   => $config['fields'],
-            'locales'  => self::LOCALES,
-            'resource' => $config['name'],
-            'is_edit'  => true,
+            'title'       => 'Редактирование',
+            'item'        => $this->presentForm($m, $config),
+            'fields'      => $config['fields'],
+            'attributes'  => $config['attributes'],
+            'locales'     => self::LOCALES,
+            'resource'    => $config['name'],
+            'image_field' => $config['image_field'],
+            'is_edit'     => true,
         ]);
     }
 
@@ -190,6 +195,11 @@ class ResourceController extends Controller
             $rules[$col] = 'nullable';
         }
 
+        // Typed rules for attributes (SimpleField in the sidebar).
+        foreach ($config['attributes'] as $a) {
+            $rules[$a['name']] = $this->ruleForAttribute($a);
+        }
+
         foreach ($config['translatable'] as $field) {
             foreach (self::LOCALES as $locale) {
                 $isRequired = $this->fieldIsRequired($field, $config) && $locale === 'ru';
@@ -198,6 +208,24 @@ class ResourceController extends Controller
         }
 
         return $request->validate($rules);
+    }
+
+    protected function ruleForAttribute(array $a): string
+    {
+        $base = $a['required'] ?? false ? 'required' : 'nullable';
+        $type = $a['type'] ?? 'text';
+        return match ($type) {
+            'email'     => "{$base}|email|max:255",
+            'url'       => "{$base}|url|max:2000",
+            'number'    => "{$base}|numeric",
+            'date'      => "{$base}|date",
+            'datetime-local' => "{$base}|date",
+            'boolean'   => "nullable|boolean",
+            'select'    => isset($a['options']) && $a['options']
+                ? "{$base}|in:" . implode(',', array_column($a['options'], 'value'))
+                : "{$base}|string",
+            default     => "{$base}|string|max:" . ($a['max'] ?? 500),
+        };
     }
 
     protected function fieldIsRequired(string $field, array $config): bool
@@ -213,6 +241,16 @@ class ResourceController extends Controller
                 $m->{$col} = $request->boolean($col);
             } elseif (array_key_exists($col, $data)) {
                 $m->{$col} = $data[$col] !== '' ? $data[$col] : null;
+            }
+        }
+
+        // Fill typed attributes
+        foreach ($config['attributes'] as $a) {
+            $name = $a['name'];
+            if (($a['type'] ?? '') === 'boolean') {
+                $m->{$name} = $request->boolean($name);
+            } elseif (array_key_exists($name, $data)) {
+                $m->{$name} = $data[$name] !== '' ? $data[$name] : null;
             }
         }
 
@@ -279,6 +317,11 @@ class ResourceController extends Controller
                 $row[$col] = $m->{$col};
             }
         }
+        foreach ($config['attributes'] as $a) {
+            if (Schema::hasColumn($m->getTable(), $a['name'])) {
+                $row[$a['name']] = $m->{$a['name']};
+            }
+        }
         if ($imageField = $config['image_field']) {
             $row['image']     = $m->{$imageField};
             $row['image_url'] = $m->{$imageField} ? $this->mediaUrl($m->{$imageField}) : null;
@@ -295,6 +338,15 @@ class ResourceController extends Controller
                 $v = $m->{$col};
                 if ($v instanceof \DateTimeInterface) $v = $v->format('Y-m-d\TH:i');
                 $out[$col] = $v;
+            }
+        }
+        foreach ($config['attributes'] as $a) {
+            if (Schema::hasColumn($m->getTable(), $a['name'])) {
+                $v = $m->{$a['name']};
+                if ($v instanceof \DateTimeInterface) {
+                    $v = $v->format(($a['type'] ?? '') === 'date' ? 'Y-m-d' : 'Y-m-d\TH:i');
+                }
+                $out[$a['name']] = $v;
             }
         }
 

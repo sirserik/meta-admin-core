@@ -4,25 +4,25 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import PageHeader from '../../components/PageHeader.vue';
 import LocaleTabs from '../../components/LocaleTabs.vue';
 import TranslatableField from '../../components/TranslatableField.vue';
+import SimpleField from '../../components/SimpleField.vue';
 
 const props = defineProps({
     title: String,
     item: Object,
-    fields: Array,
-    locales: Array,
+    fields:     { type: Array, default: () => [] },   // translatable main fields
+    attributes: { type: Array, default: () => [] },   // plain sidebar attributes
+    locales:    { type: Array, default: () => ['ru','kk','en'] },
+    image_field: { type: String, default: null },
     resource: String,
     is_edit: Boolean,
 });
 
 const activeLocale = ref('ru');
 
-// Translatable fields
-const translatableFieldNames = computed(() => props.fields.filter(f => f.translatable !== false && ['text', 'textarea', 'editor'].includes(f.type)).map(f => f.name));
-
 const initial = () => {
     const base = { _method: props.is_edit ? 'put' : 'post' };
 
-    // Seed translatable fields as {ru,kk,en}
+    // Translatable fields: {ru,kk,en}
     for (const f of props.fields) {
         const v = props.item?.[f.name] ?? {};
         base[f.name] = typeof v === 'object' && v !== null
@@ -30,11 +30,15 @@ const initial = () => {
             : { ru: v ?? '', kk: '', en: '' };
     }
 
-    // Carry over plain fields from item
-    for (const key of Object.keys(props.item || {})) {
-        if (!translatableFieldNames.value.includes(key) && key !== 'id') {
-            base[key] = props.item[key];
-        }
+    // Plain attributes: flat values from item
+    for (const a of props.attributes) {
+        base[a.name] = props.item?.[a.name] ?? (a.type === 'boolean' ? false : '');
+    }
+
+    // Image field slots
+    if (props.image_field) {
+        base[props.image_field] = null;
+        base['remove_' + props.image_field] = false;
     }
 
     return base;
@@ -42,11 +46,28 @@ const initial = () => {
 
 const form = useForm(initial());
 
+const imagePreview = ref(null);
+const existingImageUrl = ref(props.item?.[props.image_field + '_url'] ?? null);
+
+function onImageChange(e) {
+    const f = e.target.files?.[0];
+    form[props.image_field] = f || null;
+    form['remove_' + props.image_field] = false;
+    if (f) { const r = new FileReader(); r.onload = ev => (imagePreview.value = ev.target.result); r.readAsDataURL(f); }
+    else imagePreview.value = null;
+}
+function removeImage() {
+    form[props.image_field] = null;
+    form['remove_' + props.image_field] = true;
+    imagePreview.value = null;
+    existingImageUrl.value = null;
+}
+
 function submit() {
     const url = props.is_edit
         ? `/admin/${props.resource}/${props.item.id}`
         : `/admin/${props.resource}`;
-    form.post(url, { forceFormData: true });
+    form.post(url, { forceFormData: !!props.image_field });
 }
 </script>
 
@@ -62,8 +83,9 @@ function submit() {
 
     <form @submit.prevent="submit" class="space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2">
-                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <!-- Main: translatable fields -->
+            <div :class="fields.length ? 'lg:col-span-2' : 'lg:col-span-3'">
+                <div v-if="fields.length" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                     <LocaleTabs v-model="activeLocale" />
                     <div class="space-y-5">
                         <TranslatableField v-for="f in fields" :key="f.name"
@@ -73,13 +95,40 @@ function submit() {
                 </div>
             </div>
 
+            <!-- Sidebar: actions + plain attributes + image -->
             <div class="space-y-6">
-                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
-                    <h3 class="font-semibold text-gray-900 dark:text-white">Публикация</h3>
-                    <button type="submit" :disabled="form.processing" class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <button type="submit" :disabled="form.processing"
+                        class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium">
                         <i class="fas" :class="form.processing ? 'fa-spinner fa-spin' : 'fa-save'"></i>
                         {{ is_edit ? 'Сохранить' : 'Создать' }}
                     </button>
+                </div>
+
+                <div v-if="attributes.length" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+                    <h3 class="font-semibold text-gray-900 dark:text-white">Атрибуты</h3>
+                    <SimpleField v-for="a in attributes" :key="a.name"
+                        :name="a.name"
+                        :type="a.type"
+                        :label="a.label"
+                        :required="a.required"
+                        :placeholder="a.placeholder"
+                        :options="a.options || []"
+                        :help="a.help"
+                        :errors="form.errors"
+                        v-model="form[a.name]" />
+                </div>
+
+                <div v-if="image_field" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-3">
+                    <h3 class="font-semibold text-gray-900 dark:text-white">Изображение</h3>
+                    <div v-if="imagePreview || existingImageUrl" class="relative">
+                        <img :src="imagePreview || existingImageUrl" class="w-full rounded-lg object-cover max-h-48">
+                        <button type="button" @click="removeImage" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+                    <input type="file" accept="image/*" @change="onImageChange"
+                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-900/30 dark:file:text-red-300">
                 </div>
             </div>
         </div>

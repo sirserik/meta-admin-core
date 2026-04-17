@@ -49,6 +49,9 @@ class AdminCore
         $config['translatable']  = $config['translatable']  ?? [];
         $config['plain']         = $config['plain']         ?? [];
         $config['fields']        = $config['fields']        ?? [];
+        // attributes — плоские (non-translatable) поля формы, рендерятся в
+        // сайдбаре через SimpleField: text/url/email/number/date/select/boolean/color
+        $config['attributes']    = $config['attributes']    ?? [];
         $config['image_field']   = $config['image_field']   ?? null;
         $config['route_key']     = $config['route_key']     ?? null; // null = use model default
         $config['per_page']      = $config['per_page']      ?? 15;
