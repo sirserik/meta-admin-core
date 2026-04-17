@@ -196,8 +196,15 @@ class ResourceController extends Controller
         }
 
         // Typed rules for attributes (SimpleField in the sidebar).
+        $table = (new $config['model']())->getTable();
         foreach ($config['attributes'] as $a) {
-            $rules[$a['name']] = $this->ruleForAttribute($a);
+            $rule = $this->ruleForAttribute($a);
+            // 'unique' => true  adds unique:{table},{name}[,ignoreId]
+            if (!empty($a['unique'])) {
+                $ignoreId = $existing?->id;
+                $rule .= '|unique:' . $table . ',' . $a['name'] . ($ignoreId ? ',' . $ignoreId : '');
+            }
+            $rules[$a['name']] = $rule;
         }
 
         foreach ($config['translatable'] as $field) {
