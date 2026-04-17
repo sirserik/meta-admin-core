@@ -96,13 +96,17 @@ AdminCore::resource('articles', [
     'label'         => 'Статьи',
     'menu'          => 'Контент',
     'icon'          => 'fa-newspaper',
-    'translatable'  => ['title', 'excerpt', 'content'],
-    'plain'         => ['slug', 'category', 'is_published', 'is_featured', 'published_at'],
     'image_field'   => 'featured_image',
-    'fields'        => [
+    'translatable'  => ['title', 'excerpt', 'content'],
+    'fields' => [
         ['name' => 'title',   'type' => 'text',     'label' => 'Заголовок', 'required' => true],
         ['name' => 'excerpt', 'type' => 'textarea', 'label' => 'Краткое описание'],
         ['name' => 'content', 'type' => 'editor',   'label' => 'Содержимое'],
+    ],
+    'attributes' => [
+        ['name' => 'slug',         'type' => 'text',           'label' => 'Slug'],
+        ['name' => 'is_published', 'type' => 'boolean',        'label' => 'Опубликована'],
+        ['name' => 'published_at', 'type' => 'datetime-local', 'label' => 'Дата публикации'],
     ],
 ]);
 
@@ -115,9 +119,93 @@ AdminCore::dashboardStat(fn () => [
 ]);
 ```
 
-Routes, sidebar navigation, CRUD controller and Vue pages are wired
-automatically. Custom pages go in `resources/js/admin-spa/pages/{Resource}/Index.vue`
-to override the generic templates.
+Routes, sidebar navigation, CRUD controller, validation rules and Vue
+pages are wired automatically. The resource URL is `/admin/{name}` and
+catches all `GET|POST|PUT|PATCH|DELETE` — no per-resource routes to
+register. To override the generic Vue page, add
+`resources/js/admin-spa/pages/{PageKey}/{Index,Form}.vue` and point
+`'page' => 'PageKey'` in the config.
+
+### Config reference
+
+| Key             | Type     | Default         | Purpose                                           |
+|-----------------|----------|-----------------|---------------------------------------------------|
+| `model`         | class    | required        | Eloquent model class                              |
+| `label`         | string   | `ucfirst(name)` | Sidebar link text, page header                    |
+| `menu`          | string   | `'Контент'`     | Sidebar section grouping                          |
+| `icon`          | string   | `'fa-file'`     | FontAwesome class (without `fas` prefix)          |
+| `image_field`   | string   | `null`          | Column name holding image path (with `_url` accessor) |
+| `translatable`  | string[] | `[]`            | Field names stored via Spatie Translatable        |
+| `fields`        | array[]  | `[]`            | Translatable form fields (main area)              |
+| `attributes`    | array[]  | `[]`            | Plain (non-translatable) form fields (sidebar)    |
+| `order_by`      | array    | `['created_at' => 'desc']` | Default list ordering              |
+| `per_page`      | int      | `15`            | List pagination                                   |
+| `route_key`     | string   | model default   | Model key used in URLs (e.g. `'slug'`)            |
+| `page`          | string   | `'Resource'`    | Vue page folder (`Resource/Index.vue` etc.)       |
+
+### Field types (translatable — `fields`)
+
+`text`, `textarea`, `editor` (Tiptap rich-text). Each locale (`ru/kk/en`)
+gets its own input, switched by `LocaleTabs`.
+
+### Attribute types (plain — `attributes`)
+
+| Type              | Renders as                   | Validation rule added    |
+|-------------------|------------------------------|--------------------------|
+| `text`            | `<input type="text">`        | `string`, `max:{max}`    |
+| `textarea`        | `<textarea>`                 | `string`                 |
+| `email`           | `<input type="email">`       | `email`                  |
+| `url`             | `<input type="url">`         | `url`, `max:{max}`       |
+| `number`          | `<input type="number">`      | `numeric`                |
+| `date`            | `<input type="date">`        | `date`                   |
+| `datetime-local`  | `<input type="datetime-local">` | `date`                |
+| `color`           | `<input type="color">`       | `string`                 |
+| `boolean`         | `<input type="checkbox">`    | `boolean`                |
+| `select`          | `<select>`                   | `in:<option values>`     |
+
+Per-attribute modifiers: `required`, `unique`, `max`, `placeholder`,
+`help`, `options` (for `select`).
+
+### Dynamic FK selects (closure-based `options`)
+
+`options` can be a closure — it's evaluated on each request so the list
+stays fresh:
+
+```php
+AdminCore::resource('teachers', [
+    'model' => Teacher::class,
+    // ...
+    'attributes' => [
+        ['name' => 'school_id', 'type' => 'select', 'required' => true,
+            'options' => fn () => School::orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($s) => ['value' => $s->id, 'label' => $s->name])
+                ->all()],
+    ],
+]);
+```
+
+### Unique validation
+
+```php
+['name' => 'slug', 'type' => 'text', 'unique' => true],
+```
+
+Generates `unique:{table},{column},{currentId}` — excludes current row on
+update automatically.
+
+## Migration from legacy Spa controllers
+
+If you already have `App\Http\Controllers\Admin\Spa\FooController extends
+BaseCrudController`, migration is usually a 1:1 translation:
+
+1. Remove the explicit `/foo` routes from your route file.
+2. Delete the controller + its Vue pages.
+3. Add `AdminCore::resource('foo', [...])` to `AppServiceProvider`.
+
+The catch-all `/admin/{resource}` route will take over. Named routes like
+`route('admin.foo.index')` will no longer resolve — replace with plain
+`url('/admin/foo')` or `/admin/foo`.
 
 ## Architecture
 
