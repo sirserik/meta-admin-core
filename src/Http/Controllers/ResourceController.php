@@ -31,7 +31,9 @@ class ResourceController extends Controller
         $config = $this->config($resource);
         $model = $config['model'];
 
-        $filters = $request->only(['search']);
+        // Build allowed-filter list: 'search' plus any resource-declared filters.
+        $filterKeys = array_merge(['search'], array_keys($config['filters'] ?? []));
+        $filters = $request->only($filterKeys);
         $query = $model::query();
 
         foreach ($config['order_by'] as $col => $dir) {
@@ -39,6 +41,18 @@ class ResourceController extends Controller
         }
         if (!empty($filters['search'])) {
             $this->applySearch($query, $filters['search'], $config);
+        }
+        // Apply declared column filters (?field=value — exact match by default).
+        foreach (($config['filters'] ?? []) as $field => $cfg) {
+            $value = $filters[$field] ?? null;
+            if ($value === null || $value === '') continue;
+            $type = is_array($cfg) ? ($cfg['type'] ?? 'exact') : 'exact';
+            $column = is_array($cfg) ? ($cfg['column'] ?? $field) : $field;
+            match ($type) {
+                'like'  => $query->where($column, 'like', '%' . $value . '%'),
+                'in'    => $query->whereIn($column, (array) $value),
+                default => $query->where($column, $value),
+            };
         }
 
         $paginator = $query->paginate($config['per_page'])->withQueryString();

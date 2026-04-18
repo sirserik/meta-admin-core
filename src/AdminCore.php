@@ -65,6 +65,15 @@ class AdminCore
         // form (useful for "edit related resource" CTAs). Otherwise renders
         // as a small button next to "Back to list" in the header.
         $config['actions']       = $config['actions']       ?? [];
+        // filters — declare which ?key=value query params are allowed on
+        // the index list. Each value: string (exact match) or
+        // ['column' => 'db_col', 'type' => 'exact'|'like'|'in']. Example:
+        //   'filters' => [
+        //       'menu_item' => 'exact',
+        //       'category'  => ['type' => 'like'],
+        //   ]
+        // Makes /admin/articles?menu_item=international filter by column.
+        $config['filters']       = $config['filters']       ?? [];
         // edit_url — closure that returns a custom URL for "edit" links in
         // the index table. When set, row clicks skip the generic
         // /admin/{resource}/{id}/edit screen and go where you say. Useful

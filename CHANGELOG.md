@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-04-18
+
+### Added
+- **Filters on resource index.** Declare allowed query-string filters on
+  a resource config; the package applies them to the list query.
+  ```php
+  'filters' => [
+      'menu_item' => 'exact',                          // WHERE menu_item = value
+      'category'  => ['type' => 'like'],               // WHERE category LIKE %value%
+      'status'    => ['column' => 'post_status', 'type' => 'in'], // whereIn
+  ],
+  ```
+  Typical use: sidebar items linking to `/admin/articles?menu_item=international`
+  now actually filter (before this, the query string was ignored).
+
+
 ## [0.8.0] — 2026-04-18
 
 ### Added
