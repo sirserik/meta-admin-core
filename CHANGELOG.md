@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-04-18
+
+### Added
+- **All specialised admin pages moved into the package** (`resources/js/pages/`):
+  Activity, Backup, Blocks, Cache, Leads, Media, Menu, RectorQuestions,
+  Settings, SiteSettings, Theme, Users. 16 Vue files previously duplicated
+  byte-for-byte across ETU and etec consumer apps.
+- Consumer sites no longer need local copies of these pages. The
+  `bootAdminCore` glob already resolves them from the package via
+  `corePages = import.meta.glob('../../vendor/meta/admin-core/resources/js/pages/**/*.vue')`.
+- Site-specific overrides still possible — just drop a file at
+  `resources/js/admin-spa/pages/{Name}/Index.vue` and it wins.
+
+### Changed
+- Dropped Dashboard.vue demo content; Dashboard now renders stats +
+  recent-items + quick-actions from 0.6.0.
+
+
 ## [0.6.0] — 2026-04-18
 
 ### Added
