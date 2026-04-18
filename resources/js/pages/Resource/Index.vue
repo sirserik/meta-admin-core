@@ -40,6 +40,35 @@ const createUrl = computed(() => {
     const qs = new URLSearchParams(activeFilters.value).toString();
     return `/admin/${props.resource}/create${qs ? '?' + qs : ''}`;
 });
+// Build a contextual subtitle. When the list is filtered by something
+// like school_id=5, show "Школа: Экономика и право" instead of a boring
+// "Всего: 0".
+const filterSummary = computed(() => {
+    const parts = Object.values(props.activeFilterLabels || {}).map(
+        (f) => `${f.label}: ${f.value}`
+    );
+    return parts.length ? parts.join(' · ') : null;
+});
+const subtitle = computed(() => {
+    if (filterSummary.value) return filterSummary.value;
+    return `Всего: ${props.items.total}`;
+});
+
+// Empty-state message. If user hit an empty filtered list, guide them.
+const emptyState = computed(() => {
+    if (hasActiveFilters.value) {
+        return {
+            icon: 'fa-inbox',
+            title: 'По этому фильтру записей пока нет',
+            hint: 'Нажми «Создать» чтобы добавить первую запись — фильтр уже подставится в форму. Или сбрось фильтр чтобы увидеть все записи.',
+        };
+    }
+    if (props.items.total === 0 && props.filters?.search) {
+        return { icon: 'fa-magnifying-glass', title: 'Ничего не найдено', hint: 'Попробуй другой поисковый запрос.' };
+    }
+    return { icon: 'fa-inbox', title: 'Пока ничего нет', hint: 'Нажми «Создать» чтобы добавить первую запись.' };
+});
+
 const badgeClass = (color) => ({
     amber: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
     red:   'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
@@ -77,7 +106,7 @@ function statusLabel(row) {
 
 <template>
     <Head :title="title" />
-    <PageHeader :title="title" :subtitle="`Всего: ${items.total}`">
+    <PageHeader :title="title" :subtitle="subtitle">
         <template #actions>
             <Link v-if="hasActiveFilters" :href="`/admin/${resource}`"
                 class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-900/50 text-amber-700 dark:text-amber-300 px-3 py-2 rounded-lg text-sm">
@@ -91,13 +120,20 @@ function statusLabel(row) {
     </PageHeader>
 
     <!-- Filter banner — human-readable labels (e.g. "Школа: Экономика и право"). -->
-    <div v-if="hasActiveFilters" class="mb-4 flex items-center gap-2 flex-wrap text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 px-4 py-3 rounded-lg">
-        <i class="fas fa-filter"></i>
-        <span class="font-medium">Показаны только:</span>
-        <span v-for="(v, k) in activeFilters" :key="k" class="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">
-            <span class="text-amber-600 dark:text-amber-400">{{ (activeFilterLabels[k] && activeFilterLabels[k].label) || k }}:</span>
-            <strong>{{ (activeFilterLabels[k] && activeFilterLabels[k].value) || v }}</strong>
-        </span>
+    <div v-if="hasActiveFilters" class="mb-4 flex items-start gap-3 text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 px-4 py-3 rounded-lg">
+        <i class="fas fa-filter mt-0.5"></i>
+        <div class="flex-1 space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-medium">Показаны только:</span>
+                <span v-for="(v, k) in activeFilters" :key="k" class="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">
+                    <span class="text-amber-700/70 dark:text-amber-400">{{ (activeFilterLabels[k] && activeFilterLabels[k].label) || k }}:</span>
+                    <strong>{{ (activeFilterLabels[k] && activeFilterLabels[k].value) || v }}</strong>
+                </span>
+            </div>
+            <p class="text-xs text-amber-700/80 dark:text-amber-300/70">
+                Кнопка «Создать» добавит запись с этим фильтром. «Сбросить фильтр» — увидеть все записи.
+            </p>
+        </div>
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
@@ -160,9 +196,21 @@ function statusLabel(row) {
                     </td>
                 </tr>
                 <tr v-if="items.data.length === 0">
-                    <td colspan="3" class="px-4 py-12 text-center text-gray-500">
-                        <i class="fas fa-inbox text-4xl mb-2 opacity-30"></i>
-                        <p>Записей не найдено</p>
+                    <td colspan="3" class="px-6 py-16 text-center">
+                        <i class="fas text-5xl mb-4 text-gray-300 dark:text-gray-600" :class="emptyState.icon"></i>
+                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ emptyState.title }}</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-5">{{ emptyState.hint }}</p>
+                        <div class="flex items-center justify-center gap-2">
+                            <Link :href="createUrl" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                <i class="fas fa-plus"></i>
+                                <span>Создать{{ filterSummary ? ' в этой школе' : '' }}</span>
+                            </Link>
+                            <Link v-if="hasActiveFilters" :href="`/admin/${resource}`"
+                                class="inline-flex items-center gap-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-times"></i>
+                                <span>Сбросить фильтр</span>
+                            </Link>
+                        </div>
                     </td>
                 </tr>
             </tbody>

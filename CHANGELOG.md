@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.2] — 2026-04-18
+
+### Changed
+- **Empty state is contextual.** Instead of a bare "Записей не найдено",
+  the empty list now shows:
+  - a helpful title + hint depending on whether a filter is active,
+    search is active, or the table is just empty,
+  - a "Создать" button that preserves the filter,
+  - a "Сбросить фильтр" shortcut when filtered.
+- **Subtitle reflects the filter context.** When
+  `/admin/management?school_id=5` returns nothing, the page subtitle
+  shows "Школа: ПЦК Экономика и право" instead of the unhelpful
+  "Всего: 0".
+- **Filter banner explains what happens next.** Adds a small helper line
+  telling the user Create adds with that filter + Reset sees all.
+
+
 ## [0.12.1] — 2026-04-18
 
 ### Added
