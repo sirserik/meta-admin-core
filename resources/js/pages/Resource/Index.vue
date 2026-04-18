@@ -145,14 +145,20 @@ function hasPublishableFlag(row) {
     </div>
 
     <!-- Desktop/tablet: real table. Mobile: card list. -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <!-- Table layout — md+ -->
-        <table class="w-full hidden md:table">
-            <thead class="bg-gray-50 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700 sticky top-16 z-10">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <!-- Table layout — md+. `table-fixed` with explicit col widths so the
+             Actions column never collapses to 0 on long titles. -->
+        <table class="w-full hidden md:table table-fixed rounded-xl overflow-hidden">
+            <colgroup>
+                <col />
+                <col class="w-36" />
+                <col class="w-40" />
+            </colgroup>
+            <thead class="bg-gray-50 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                     <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Запись</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Статус</th>
-                    <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36 whitespace-nowrap">Действия</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Статус</th>
+                    <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Действия</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
