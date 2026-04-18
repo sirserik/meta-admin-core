@@ -70,6 +70,13 @@ class SdgFeature extends FeatureModule
             'dim' => fn ($g) => !$g->is_active,
         ]);
 
+        // Direct link to the SDG portal landing page blocks — editing
+        // content like the hero/stats/partners lives on /admin/blocks
+        // filtered to the `sdg-portal` page_name.
+        $prefix = config('admin-core.prefix', 'admin');
+        $core->menuItem('Страница портала', "/{$prefix}/blocks?page=sdg-portal",      'fa-globe',      'ЦУР (SDG)', 30);
+        $core->menuItem('Новостная лента',  "/{$prefix}/blocks?page=sdg-portal-news", 'fa-newspaper',  'ЦУР (SDG)', 31);
+
         $core->resource('sdg-news', [
             'model'        => 'App\\Models\\SdgNews',
             'label'        => 'Новости ЦУР',

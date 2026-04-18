@@ -42,5 +42,9 @@ class GreenDealFeature extends FeatureModule
             ],
             'dim' => fn ($p) => !$p->is_active,
         ]);
+
+        // Direct link to GDC public landing page blocks.
+        $prefix = config('admin-core.prefix', 'admin');
+        $core->menuItem('Страница центра', "/{$prefix}/blocks?page=green-deal-center", 'fa-globe', 'Green Deal Center', 20);
     }
 }

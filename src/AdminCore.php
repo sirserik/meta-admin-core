@@ -98,6 +98,15 @@ class AdminCore
 
     public function menuItem(string $label, string $href, string $icon = 'fa-circle', string $menu = 'Другое', int $order = 100): self
     {
+        // Dedupe by href — last-writer wins. Lets the consumer override a
+        // default item from the package by calling menuItem() with the same
+        // href but a different label / menu group.
+        foreach ($this->menuItems as $i => $existing) {
+            if ($existing['href'] === $href) {
+                $this->menuItems[$i] = compact('label', 'href', 'icon', 'menu', 'order');
+                return $this;
+            }
+        }
         $this->menuItems[] = compact('label', 'href', 'icon', 'menu', 'order');
         return $this;
     }
