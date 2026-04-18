@@ -1,6 +1,7 @@
 <script setup>
-import { ref, watch, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
+import { BubbleMenu } from '@tiptap/vue-3/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
@@ -14,10 +15,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const fileInput = ref(null);
+const replaceFileInput = ref(null);
 
-// Tiptap's StarterKit v3 now bundles Link and Underline. We disable them
-// there and register our configured instances to avoid duplicate-extension
-// warnings.
 const editor = useEditor({
     content: props.modelValue,
     extensions: [
@@ -34,6 +33,7 @@ const editor = useEditor({
         Image.configure({
             inline: false,
             allowBase64: false,
+            HTMLAttributes: { class: 'tiptap-image' },
         }),
     ],
     editorProps: {
@@ -71,27 +71,32 @@ const editor = useEditor({
     },
 });
 
+async function upload(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    fd.append('_token', csrf);
+    const res = await fetch(props.uploadUrl, {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+        credentials: 'same-origin',
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (!json.url) throw new Error('No URL in response');
+    return json.url;
+}
+
 async function uploadAndInsert(file) {
     try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        fd.append('_token', csrf);
-        const res = await fetch(props.uploadUrl, {
-            method: 'POST',
-            body: fd,
-            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-            credentials: 'same-origin',
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const json = await res.json();
-        if (json.url) editor.value?.chain().focus().setImage({ src: json.url }).run();
+        const url = await upload(file);
+        editor.value?.chain().focus().setImage({ src: url }).run();
     } catch (e) {
         console.warn('[RichTextEditor] upload failed:', e);
     }
 }
 
-// Sync incoming modelValue when parent updates it externally (rare but possible)
 watch(() => props.modelValue, (value) => {
     const current = editor.value?.getHTML();
     if (editor.value && value !== current) {
@@ -122,20 +127,9 @@ function triggerImageUpload() {
 async function onImageSelected(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    fd.append('_token', csrf);
     try {
-        const res = await fetch(props.uploadUrl, {
-            method: 'POST',
-            body: fd,
-            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-            credentials: 'same-origin',
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const json = await res.json();
-        if (json.url) editor.value?.chain().focus().setImage({ src: json.url }).run();
+        const url = await upload(file);
+        editor.value?.chain().focus().setImage({ src: url }).run();
     } catch (err) {
         alert('Ошибка загрузки: ' + err.message);
     } finally {
@@ -153,39 +147,133 @@ function btn(active) {
             : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700',
     ];
 }
+
+// ===== Image bubble menu =====
+// Shown when the cursor is on an image node. Offers replace / delete /
+// width toggles / alt text.
+
+const imageBubbleShouldShow = ({ editor }) => !!editor?.isActive('image');
+
+function triggerImageReplace() {
+    replaceFileInput.value?.click();
+}
+async function onImageReplace(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+        const url = await upload(file);
+        editor.value?.chain().focus().updateAttributes('image', { src: url }).run();
+    } catch (err) {
+        alert('Ошибка загрузки: ' + err.message);
+    } finally {
+        e.target.value = '';
+    }
+}
+function deleteImage() {
+    editor.value?.chain().focus().deleteSelection().run();
+}
+function editImageAlt() {
+    const current = editor.value?.getAttributes('image')?.alt ?? '';
+    const alt = window.prompt('Подпись / alt-текст:', current);
+    if (alt === null) return;
+    editor.value?.chain().focus().updateAttributes('image', { alt }).run();
+}
+// Tiptap's Image extension accepts a `width` attribute on the node —
+// we store it as a % string and let CSS render the resize.
+function setImageWidth(width) {
+    editor.value?.chain().focus().updateAttributes('image', { width }).run();
+}
+function imageWidth() {
+    return editor.value?.getAttributes('image')?.width ?? '100%';
+}
 </script>
 
 <template>
     <div v-if="editor" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+        <!-- Main toolbar -->
         <div class="flex flex-wrap gap-1 p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
-            <button type="button" @click="run('toggleBold')" :class="btn(isActive('bold'))"><i class="fas fa-bold"></i></button>
-            <button type="button" @click="run('toggleItalic')" :class="btn(isActive('italic'))"><i class="fas fa-italic"></i></button>
-            <button type="button" @click="run('toggleUnderline')" :class="btn(isActive('underline'))"><i class="fas fa-underline"></i></button>
-            <button type="button" @click="run('toggleStrike')" :class="btn(isActive('strike'))"><i class="fas fa-strikethrough"></i></button>
+            <button type="button" @click="run('toggleBold')" :class="btn(isActive('bold'))" title="Жирный"><i class="fas fa-bold"></i></button>
+            <button type="button" @click="run('toggleItalic')" :class="btn(isActive('italic'))" title="Курсив"><i class="fas fa-italic"></i></button>
+            <button type="button" @click="run('toggleUnderline')" :class="btn(isActive('underline'))" title="Подчёркивание"><i class="fas fa-underline"></i></button>
+            <button type="button" @click="run('toggleStrike')" :class="btn(isActive('strike'))" title="Зачёркнутый"><i class="fas fa-strikethrough"></i></button>
 
             <span class="w-px bg-gray-300 dark:bg-gray-600 mx-1"></span>
 
-            <button type="button" @click="setHeading(2)"  :class="btn(isActive('heading', {level: 2}))">H2</button>
-            <button type="button" @click="setHeading(3)"  :class="btn(isActive('heading', {level: 3}))">H3</button>
+            <button type="button" @click="setHeading(2)"  :class="btn(isActive('heading', {level: 2}))" title="Заголовок 2">H2</button>
+            <button type="button" @click="setHeading(3)"  :class="btn(isActive('heading', {level: 3}))" title="Заголовок 3">H3</button>
 
             <span class="w-px bg-gray-300 dark:bg-gray-600 mx-1"></span>
 
-            <button type="button" @click="run('toggleBulletList')"  :class="btn(isActive('bulletList'))"><i class="fas fa-list-ul"></i></button>
-            <button type="button" @click="run('toggleOrderedList')" :class="btn(isActive('orderedList'))"><i class="fas fa-list-ol"></i></button>
-            <button type="button" @click="run('toggleBlockquote')"  :class="btn(isActive('blockquote'))"><i class="fas fa-quote-right"></i></button>
-            <button type="button" @click="run('toggleCodeBlock')"   :class="btn(isActive('codeBlock'))"><i class="fas fa-code"></i></button>
+            <button type="button" @click="run('toggleBulletList')"  :class="btn(isActive('bulletList'))" title="Список"><i class="fas fa-list-ul"></i></button>
+            <button type="button" @click="run('toggleOrderedList')" :class="btn(isActive('orderedList'))" title="Нумерованный список"><i class="fas fa-list-ol"></i></button>
+            <button type="button" @click="run('toggleBlockquote')"  :class="btn(isActive('blockquote'))" title="Цитата"><i class="fas fa-quote-right"></i></button>
+            <button type="button" @click="run('toggleCodeBlock')"   :class="btn(isActive('codeBlock'))" title="Блок кода"><i class="fas fa-code"></i></button>
 
             <span class="w-px bg-gray-300 dark:bg-gray-600 mx-1"></span>
 
-            <button type="button" @click="addLink" :class="btn(isActive('link'))"><i class="fas fa-link"></i></button>
-            <button type="button" @click="triggerImageUpload" :class="btn(false)"><i class="fas fa-image"></i></button>
+            <button type="button" @click="addLink" :class="btn(isActive('link'))" title="Ссылка"><i class="fas fa-link"></i></button>
+            <button type="button" @click="triggerImageUpload" :class="btn(false)" title="Вставить картинку"><i class="fas fa-image"></i></button>
             <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onImageSelected">
 
             <span class="w-px bg-gray-300 dark:bg-gray-600 mx-1"></span>
 
-            <button type="button" @click="run('undo')" :class="btn(false)"><i class="fas fa-rotate-left"></i></button>
-            <button type="button" @click="run('redo')" :class="btn(false)"><i class="fas fa-rotate-right"></i></button>
+            <button type="button" @click="run('undo')" :class="btn(false)" title="Отменить"><i class="fas fa-rotate-left"></i></button>
+            <button type="button" @click="run('redo')" :class="btn(false)" title="Повторить"><i class="fas fa-rotate-right"></i></button>
         </div>
+
+        <!-- Image bubble menu — appears when the user clicks an image -->
+        <BubbleMenu :editor="editor" :should-show="imageBubbleShouldShow">
+            <div class="flex items-center gap-1 bg-gray-900 text-white rounded-lg shadow-xl p-1 text-sm">
+                <button type="button" @click="triggerImageReplace" class="px-2.5 py-1.5 rounded hover:bg-gray-700 flex items-center gap-1.5" title="Заменить">
+                    <i class="fas fa-arrows-rotate text-xs"></i><span class="hidden sm:inline">Заменить</span>
+                </button>
+                <input ref="replaceFileInput" type="file" accept="image/*" class="hidden" @change="onImageReplace">
+
+                <button type="button" @click="editImageAlt" class="px-2.5 py-1.5 rounded hover:bg-gray-700 flex items-center gap-1.5" title="Подпись / alt">
+                    <i class="fas fa-closed-captioning text-xs"></i><span class="hidden sm:inline">Alt</span>
+                </button>
+
+                <span class="w-px bg-gray-700 mx-0.5"></span>
+
+                <button type="button" @click="setImageWidth('50%')"
+                    :class="['px-2 py-1.5 rounded hover:bg-gray-700 text-xs', imageWidth() === '50%' ? 'bg-gray-700 text-red-300' : '']"
+                    title="Ширина 50%">50%</button>
+                <button type="button" @click="setImageWidth('75%')"
+                    :class="['px-2 py-1.5 rounded hover:bg-gray-700 text-xs', imageWidth() === '75%' ? 'bg-gray-700 text-red-300' : '']"
+                    title="Ширина 75%">75%</button>
+                <button type="button" @click="setImageWidth('100%')"
+                    :class="['px-2 py-1.5 rounded hover:bg-gray-700 text-xs', (imageWidth() === '100%' || !editor.getAttributes('image')?.width) ? 'bg-gray-700 text-red-300' : '']"
+                    title="Ширина 100%">100%</button>
+
+                <span class="w-px bg-gray-700 mx-0.5"></span>
+
+                <button type="button" @click="deleteImage" class="px-2.5 py-1.5 rounded hover:bg-red-600 flex items-center gap-1.5 text-red-300" title="Удалить">
+                    <i class="fas fa-trash text-xs"></i><span class="hidden sm:inline">Удалить</span>
+                </button>
+            </div>
+        </BubbleMenu>
+
         <EditorContent :editor="editor" />
     </div>
 </template>
+
+<style>
+/* Tiptap image width attribute is serialized to the DOM; render it as a
+   flexible block so resizing via the bubble menu shows visually. */
+.tiptap-editor img.tiptap-image,
+.tiptap-editor img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1rem auto;
+    border-radius: 0.5rem;
+}
+.tiptap-editor img[width="50%"]  { max-width: 50%; }
+.tiptap-editor img[width="75%"]  { max-width: 75%; }
+.tiptap-editor img[width="100%"] { max-width: 100%; }
+/* Selected image — dashed outline to make selection obvious. */
+.tiptap-editor img.ProseMirror-selectednode {
+    outline: 3px solid #C41E3A;
+    outline-offset: 2px;
+}
+</style>
