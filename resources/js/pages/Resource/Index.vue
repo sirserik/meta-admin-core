@@ -84,7 +84,7 @@ function statusLabel(row) {
                             <div v-else class="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
                                 <i class="fas fa-file"></i>
                             </div>
-                            <Link :href="`/admin/${resource}/${row.id}/edit`" class="font-medium text-gray-900 dark:text-white hover:text-red-700">
+                            <Link :href="row.url" class="font-medium text-gray-900 dark:text-white hover:text-red-700">
                                 {{ row.title || '(без названия)' }}
                             </Link>
                         </div>
@@ -96,7 +96,7 @@ function statusLabel(row) {
                     </td>
                     <td class="px-4 py-3 text-right">
                         <div class="flex justify-end gap-1">
-                            <Link :href="`/admin/${resource}/${row.id}/edit`" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"><i class="fas fa-pen"></i></Link>
+                            <Link :href="row.url" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"><i class="fas fa-pen"></i></Link>
                             <button @click="toggle(row)" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><i class="fas" :class="row.is_published || row.is_active || row.status === 'published' ? 'fa-eye-slash' : 'fa-eye'"></i></button>
                             <button @click="destroy(row)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"><i class="fas fa-trash"></i></button>
                         </div>
