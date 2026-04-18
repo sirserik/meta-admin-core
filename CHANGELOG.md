@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-04-18
+
+### Changed
+- **Resource form redesigned as stacked sections.** Instead of a 2/3 +
+  1/3 (main/sidebar) grid that split translatable fields away from
+  their related plain attributes, the form now renders a single
+  max-w-5xl column of section cards. Each section can contain both
+  translatable fields (e.g. `dean_name` with locale tabs) and plain
+  attributes (e.g. `dean_email`, `dean_office`) next to each other.
+  Sections derived from `group` on both `fields` and `attributes`.
+- Locale tabs moved to a sticky strip at the top of the form — one set
+  for the whole page, applies to all translatable fields everywhere.
+- Image uploader shows below sections. Save/cancel in a sticky footer
+  row instead of sidebar card.
+
+### Rationale
+Schools edit had 13 plain attributes in a tall sidebar column while
+translatable `dean_name` was in the main area — same-entity data split
+across the page. Matches the pre-headless Blade admin layout where
+"Декан", "Методист", "Приёмная комиссия" were unified sections.
+
+
 ## [0.10.0] — 2026-04-18
 
 ### Added
