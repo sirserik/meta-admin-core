@@ -135,6 +135,45 @@ async function pickFile(e, onSet) {
     } catch (err) { alert('Ошибка загрузки: ' + err.message); }
     finally { e.target.value = ''; }
 }
+
+// ===== Icon picker popup state =====
+const iconPickerOpen = ref(null); // object { setter, close }
+const ICON_SUGGESTIONS = [
+    { icon: 'fas fa-file-alt',    label: 'Документ' },
+    { icon: 'fas fa-file-pdf',    label: 'PDF' },
+    { icon: 'fas fa-file-word',   label: 'Word' },
+    { icon: 'fas fa-file-excel',  label: 'Excel' },
+    { icon: 'fas fa-file-powerpoint', label: 'PowerPoint' },
+    { icon: 'fas fa-file-archive',    label: 'Архив' },
+    { icon: 'fas fa-file-image',  label: 'Картинка' },
+    { icon: 'fas fa-file-video',  label: 'Видео' },
+    { icon: 'fas fa-folder-open', label: 'Папка' },
+    { icon: 'fas fa-link',        label: 'Ссылка' },
+    { icon: 'fas fa-book',        label: 'Книга' },
+    { icon: 'fas fa-graduation-cap', label: 'Учебный' },
+    { icon: 'fas fa-gavel',       label: 'Юридический' },
+    { icon: 'fas fa-certificate', label: 'Сертификат' },
+    { icon: 'fas fa-award',       label: 'Награда' },
+    { icon: 'fas fa-chart-line',  label: 'Отчёт' },
+    { icon: 'fas fa-building',    label: 'Организация' },
+    { icon: 'fas fa-users',       label: 'Комиссия' },
+    { icon: 'fas fa-download',    label: 'Скачать' },
+    { icon: 'fas fa-external-link-alt', label: 'Внешняя' },
+];
+
+const COLOR_PRESETS = [
+    { value: 'red',    label: 'Красный',  hex: '#dc2626' },
+    { value: 'blue',   label: 'Синий',    hex: '#2563eb' },
+    { value: 'green',  label: 'Зелёный',  hex: '#16a34a' },
+    { value: 'gold',   label: 'Золотой',  hex: '#ca8a04' },
+    { value: 'purple', label: 'Фиолет.',  hex: '#9333ea' },
+    { value: 'orange', label: 'Оранжев.', hex: '#ea580c' },
+    { value: 'gray',   label: 'Серый',    hex: '#6b7280' },
+];
+
+function colorHex(value) {
+    return COLOR_PRESETS.find((c) => c.value === value)?.hex || value || '#9ca3af';
+}
 </script>
 
 <template>
@@ -171,9 +210,17 @@ async function pickFile(e, onSet) {
                 </div>
 
                 <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-                    <div v-for="(row, i) in getArray(field.key)" :key="i" class="p-4 space-y-3">
+                    <div v-for="(row, i) in getArray(field.key)" :key="i" class="p-4 space-y-4">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-mono text-gray-400">#{{ i + 1 }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-mono text-gray-400">#{{ i + 1 }}</span>
+                                <!-- live preview for known link types -->
+                                <span v-if="row.icon || row.color"
+                                    class="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                                    <i :class="row.icon || 'fas fa-circle'" :style="{ color: colorHex(row.color) }"></i>
+                                    <span class="truncate max-w-[280px]">{{ tVal(row, 'title', activeLocale) || row.title || '—' }}</span>
+                                </span>
+                            </div>
                             <div class="flex items-center gap-1">
                                 <button type="button" @click="moveItem(field, i, -1)" :disabled="i === 0"
                                     class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30" title="Вверх">
@@ -190,14 +237,58 @@ async function pickFile(e, onSet) {
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div v-for="sub in field.item_fields" :key="sub.key" :class="sub.type === 'textarea' ? 'sm:col-span-2' : ''">
-                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{{ sub.label }}</label>
+                        <div class="space-y-3">
+                            <template v-for="sub in field.item_fields" :key="sub.key">
+                                <div v-if="sub.key === 'icon'">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{{ sub.label }}</label>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-10 h-10 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                            <i :class="row[sub.key] || 'fas fa-image'" class="text-gray-600 dark:text-gray-300"></i>
+                                        </div>
+                                        <input type="text"
+                                            :value="row[sub.key] ?? ''"
+                                            @input="e => updateRow(field, i, sub.key, e.target.value)"
+                                            placeholder="fas fa-file-alt"
+                                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-red-500">
+                                    </div>
+                                    <div class="mt-2 flex flex-wrap gap-1">
+                                        <button v-for="s in ICON_SUGGESTIONS" :key="s.icon" type="button"
+                                            @click="updateRow(field, i, sub.key, s.icon)"
+                                            :title="s.label"
+                                            :class="['w-8 h-8 rounded border flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-red-50 hover:border-red-300',
+                                                    row[sub.key] === s.icon ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700']">
+                                            <i :class="s.icon" class="text-sm"></i>
+                                        </button>
+                                    </div>
+                                </div>
 
-                                <textarea v-if="sub.type === 'textarea'" rows="2"
-                                    :value="row[sub.key] ?? ''"
-                                    @input="e => updateRow(field, i, sub.key, e.target.value)"
-                                    class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"></textarea>
+                                <div v-else-if="sub.key === 'color'">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{{ sub.label }}</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <button v-for="c in COLOR_PRESETS" :key="c.value" type="button"
+                                            @click="updateRow(field, i, sub.key, c.value)"
+                                            :title="c.label"
+                                            :class="['px-3 py-2 rounded-md text-xs font-medium transition border-2',
+                                                    row[sub.key] === c.value ? 'border-gray-900 dark:border-white' : 'border-transparent hover:border-gray-300']"
+                                            :style="{ background: c.hex + '20', color: c.hex }">
+                                            {{ c.label }}
+                                        </button>
+                                        <input v-if="!COLOR_PRESETS.some(c => c.value === row[sub.key])"
+                                            type="text"
+                                            :value="row[sub.key] ?? ''"
+                                            @input="e => updateRow(field, i, sub.key, e.target.value)"
+                                            placeholder="произвольный"
+                                            class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-xs text-gray-900 dark:text-white font-mono">
+                                    </div>
+                                </div>
+
+                                <div v-else>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{{ sub.label }}</label>
+
+                                    <textarea v-if="sub.type === 'textarea'" rows="2"
+                                        :value="row[sub.key] ?? ''"
+                                        @input="e => updateRow(field, i, sub.key, e.target.value)"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"></textarea>
 
                                 <div v-else-if="sub.type === 'image'" class="flex items-center gap-2">
                                     <input type="text" placeholder="URL или путь"
@@ -255,12 +346,13 @@ async function pickFile(e, onSet) {
                                     </label>
                                 </div>
 
-                                <input v-else :type="sub.type === 'url' ? 'url' : sub.type === 'number' ? 'number' : 'text'"
-                                    :value="row[sub.key] ?? ''"
-                                    @input="e => updateRow(field, i, sub.key, e.target.value)"
-                                    :placeholder="sub.placeholder || ''"
-                                    class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
-                            </div>
+                                    <input v-else :type="sub.type === 'url' ? 'url' : sub.type === 'number' ? 'number' : 'text'"
+                                        :value="row[sub.key] ?? ''"
+                                        @input="e => updateRow(field, i, sub.key, e.target.value)"
+                                        :placeholder="sub.placeholder || ''"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
