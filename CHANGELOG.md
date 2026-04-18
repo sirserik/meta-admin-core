@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.3] — 2026-04-18
+
+### Fixed
+- **Critical: add `web` middleware group to admin routes.** Without it the
+  consumer app's session/cookies/CSRF middleware never run for
+  `/admin/*`, so `auth()` can't find the logged-in user and every
+  protected admin page 302s to `/login` in an endless loop. Symptom in
+  consumer apps: after login the user is bounced back to login when
+  visiting `/admin`. Fix: `routes/admin.php` now prepends `web` to the
+  configured middleware array (idempotent via `array_unique`).
+
+
 ## [0.3.2] — 2026-04-18
 
 ### Fixed

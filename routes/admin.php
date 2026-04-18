@@ -14,6 +14,15 @@ use Meta\AdminCore\Http\Controllers\ResourceController;
 $prefix = config('admin-core.prefix', 'admin');
 $middleware = config('admin-core.middleware', ['auth', 'verified']);
 
+// Always prepend the `web` middleware group — it's what ships sessions,
+// CSRF, cookies and route-model binding. Without it, auth() can't pull
+// the user from the session (cookies never get decrypted, StartSession
+// never runs) and every protected route 302s to /login.
+//
+// `array_unique` keeps it idempotent if the consumer already included
+// 'web' in their admin-core.middleware config.
+$middleware = array_values(array_unique(array_merge(['web'], (array) $middleware)));
+
 Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function () use ($prefix) {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('spa.dashboard');
