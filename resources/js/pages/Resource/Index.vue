@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import PageHeader from '../../components/PageHeader.vue';
 import Pagination from '../../components/Pagination.vue';
@@ -17,11 +17,36 @@ let tm = null;
 watch(search, (v) => {
     clearTimeout(tm);
     tm = setTimeout(() => {
-        router.get(`/admin/${props.resource}`,
-            v ? { search: v } : {},
+        // Preserve other filters while searching
+        const params = { ...(props.filters || {}), search: v };
+        if (!v) delete params.search;
+        router.get(`/admin/${props.resource}`, params,
             { preserveState: true, preserveScroll: true, replace: true });
     }, 300);
 });
+
+// Filters other than 'search' (e.g. school_id) — preserve them when
+// clicking Create and on "Отфильтровано" indicator.
+const activeFilters = computed(() => {
+    const out = {};
+    for (const [k, v] of Object.entries(props.filters || {})) {
+        if (k !== 'search' && v !== null && v !== '' && v !== undefined) out[k] = v;
+    }
+    return out;
+});
+const hasActiveFilters = computed(() => Object.keys(activeFilters.value).length > 0);
+const createUrl = computed(() => {
+    const qs = new URLSearchParams(activeFilters.value).toString();
+    return `/admin/${props.resource}/create${qs ? '?' + qs : ''}`;
+});
+const badgeClass = (color) => ({
+    amber: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    red:   'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+    green: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+    blue:  'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+    purple:'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+    gray:  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+}[color] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300');
 
 function rowKey(row) {
     // Use same slug-or-id convention as presentRow/presentForm.
@@ -53,11 +78,23 @@ function statusLabel(row) {
     <Head :title="title" />
     <PageHeader :title="title" :subtitle="`Всего: ${items.total}`">
         <template #actions>
-            <Link :href="`/admin/${resource}/create`" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            <Link v-if="hasActiveFilters" :href="`/admin/${resource}`"
+                class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-900/50 text-amber-700 dark:text-amber-300 px-3 py-2 rounded-lg text-sm">
+                <i class="fas fa-filter"></i>
+                <span>Сбросить фильтр</span>
+            </Link>
+            <Link :href="createUrl" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                 <i class="fas fa-plus"></i><span>Создать</span>
             </Link>
         </template>
     </PageHeader>
+
+    <!-- Filter banner — show what's filtered, let user clear -->
+    <div v-if="hasActiveFilters" class="mb-4 flex items-center gap-2 text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 px-4 py-3 rounded-lg">
+        <i class="fas fa-filter"></i>
+        <span>Фильтр активен:</span>
+        <span v-for="(v, k) in activeFilters" :key="k" class="font-mono bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">{{ k }}={{ v }}</span>
+    </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
         <div class="relative">
@@ -77,16 +114,32 @@ function statusLabel(row) {
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                <tr v-for="row in items.data" :key="row.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <tr v-for="row in items.data" :key="row.id"
+                    class="hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                    :class="row._dim ? 'opacity-60' : ''">
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-3">
-                            <img v-if="row.image_url" :src="row.image_url" class="w-10 h-10 rounded object-cover">
+                            <img v-if="row.image_url" :src="row.image_url" class="w-10 h-10 rounded object-cover" :class="row._dim ? 'grayscale' : ''">
                             <div v-else class="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
                                 <i class="fas fa-file"></i>
                             </div>
-                            <Link :href="row.url" class="font-medium text-gray-900 dark:text-white hover:text-red-700">
-                                {{ row.title || '(без названия)' }}
-                            </Link>
+                            <div class="min-w-0">
+                                <Link :href="row.url" class="font-medium text-gray-900 dark:text-white hover:text-red-700 block truncate">
+                                    {{ row.title || '(без названия)' }}
+                                </Link>
+                                <div v-if="row.badges && row.badges.length" class="flex flex-wrap items-center gap-1 mt-1">
+                                    <span v-for="(b, i) in row.badges" :key="i"
+                                        :class="badgeClass(b.color)"
+                                        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium">
+                                        <i v-if="b.icon" class="fas text-[10px]" :class="b.icon"></i>
+                                        {{ b.label }}
+                                    </span>
+                                    <span v-if="row._dim" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                        <i class="fas fa-eye-slash text-[10px]"></i>
+                                        Скрыт с сайта
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </td>
                     <td class="px-4 py-3">

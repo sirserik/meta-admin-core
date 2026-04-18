@@ -24,13 +24,18 @@ const initial = () => {
     const base = { _method: props.is_edit ? 'put' : 'post' };
 
     for (const f of props.fields) {
-        const v = props.item?.[f.name] ?? {};
-        base[f.name] = typeof v === 'object' && v !== null
-            ? { ru: v.ru ?? '', kk: v.kk ?? '', en: v.en ?? '' }
-            : { ru: v ?? '', kk: '', en: '' };
+        const v = props.item?.[f.name];
+        if (v && typeof v === 'object') {
+            base[f.name] = { ru: v.ru ?? '', kk: v.kk ?? '', en: v.en ?? '' };
+        } else if (v != null && v !== '') {
+            base[f.name] = { ru: String(v), kk: '', en: '' };
+        } else {
+            base[f.name] = { ru: '', kk: '', en: '' };
+        }
     }
 
     for (const a of props.attributes) {
+        // Pre-fill from ?query=value defaults passed via item on Create.
         base[a.name] = props.item?.[a.name] ?? (a.type === 'boolean' ? false : '');
     }
 

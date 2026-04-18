@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-04-18
+
+### Added
+- **`badges` config on resources** — per-row visual indicators in the
+  index list. Each badge has `when` (closure), `label`, `icon`, `color`:
+  ```php
+  'badges' => [
+      ['when' => fn ($t) => $t->is_deputy, 'label' => 'Заместитель декана', 'icon' => 'fa-user-shield', 'color' => 'purple'],
+  ],
+  ```
+  Rendered next to the row title. Colours: amber/red/green/blue/purple/gray.
+- **`dim` config** — closure returning bool. Rows where it's true render
+  opacity-60 and get a "Скрыт с сайта" badge. Typical use:
+  ```php
+  'dim' => fn ($m) => !$m->is_active,
+  ```
+- **Filter pre-fill on Create.** Clicking "Создать" from a filtered
+  index (`/admin/teachers?school_id=5`) pre-fills matching attributes
+  on the create form, so you don't re-enter the school. Also the
+  "Сбросить фильтр" button on the list header + a banner showing which
+  filters are active.
+
+
 ## [0.11.0] — 2026-04-18
 
 ### Changed

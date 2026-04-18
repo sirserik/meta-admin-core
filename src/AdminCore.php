@@ -80,6 +80,13 @@ class AdminCore
         // when a resource is really a façade over another (e.g. Pages →
         // PageBlocks). Receives Eloquent model, returns string URL.
         $config['edit_url']      = $config['edit_url']      ?? null;
+        // badges — visual indicators next to row titles in the index list.
+        // Each entry: ['when' => fn ($m) => bool, 'label' => '...', 'icon' => 'fa-...', 'color' => 'amber'|'red'|'green'|'gray']
+        // Evaluated server-side in presentRow; sent to Vue as a flat array.
+        $config['badges']        = $config['badges']        ?? [];
+        // dim — closure that returns true when a row should render dimmed
+        // (e.g. is_active=false → "скрыт с сайта" visual).
+        $config['dim']           = $config['dim']           ?? null;
         $config['image_field']   = $config['image_field']   ?? null;
         $config['route_key']     = $config['route_key']     ?? null; // null = use model default
         $config['per_page']      = $config['per_page']      ?? 15;

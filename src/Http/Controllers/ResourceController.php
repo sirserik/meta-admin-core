@@ -73,9 +73,19 @@ class ResourceController extends Controller
         $resource = $this->resolveResource($request, $resource);
         $config = $this->config($resource);
 
+        // Pre-fill form with values pulled from filter query params. So when
+        // you click "Создать" on /admin/teachers?school_id=5 the school is
+        // already selected. Only allowed keys from config['filters'] pass
+        // through — same whitelist as the index filter.
+        $defaults = [];
+        foreach (array_keys($config['filters'] ?? []) as $filterKey) {
+            $v = $request->query($filterKey);
+            if ($v !== null && $v !== '') $defaults[$filterKey] = $v;
+        }
+
         return Inertia::render($config['page'] . '/Form', [
             'title'       => 'Новый: ' . $config['label'],
-            'item'        => null,
+            'item'        => $defaults ? $defaults : null,
             'fields'      => $config['fields'],
             'attributes'  => $this->resolveAttributeOptions($config['attributes']),
             'actions'     => $this->resolveActions($config['actions'], null),
@@ -412,6 +422,21 @@ class ResourceController extends Controller
             '_route_key' => $m->getRouteKey(),
             'url'        => $customUrl,
         ];
+        // Badges — visual indicators in the list. Evaluate each one's `when`
+        // closure against the model; emit label/icon/color for matched ones.
+        $badges = [];
+        foreach (($config['badges'] ?? []) as $b) {
+            $when = $b['when'] ?? null;
+            if (!is_callable($when) || !$when($m)) continue;
+            $badges[] = [
+                'label' => $b['label'] ?? '',
+                'icon'  => $b['icon'] ?? null,
+                'color' => $b['color'] ?? 'gray',
+            ];
+        }
+        $row['badges'] = $badges;
+        // Dim — row should render in muted style (e.g. hidden from public).
+        $row['_dim'] = is_callable($config['dim'] ?? null) ? (bool) ($config['dim'])($m) : false;
         // Title/name
         foreach (['title', 'name'] as $f) {
             if (in_array($f, $config['translatable'], true) && method_exists($m, 'translate')) {
