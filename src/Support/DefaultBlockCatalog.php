@@ -396,10 +396,56 @@ class DefaultBlockCatalog implements BlockCatalog
                 [
                     'key' => 'items', 'label' => 'Документы / ссылки', 'type' => 'array',
                     'item_fields' => [
-                        ['key' => 'label', 'label' => 'Название',  'type' => 'text'],
-                        ['key' => 'url',   'label' => 'URL / файл','type' => 'url'],
+                        ['key' => 'label', 'label' => 'Название', 'type' => 'text'],
+                        ['key' => 'url',   'label' => 'URL / файл','type' => 'file'],
                     ],
                 ],
+            ],
+        ],
+        'downloadable-docs' => [
+            'items' => [
+                [
+                    'key' => 'documents', 'label' => 'Документы', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'title',    'label' => 'Название',     'type' => 'text'],
+                        ['key' => 'url',      'label' => 'Файл (PDF/…)', 'type' => 'file'],
+                        ['key' => 'category', 'label' => 'Категория',    'type' => 'text'],
+                    ],
+                ],
+            ],
+        ],
+        'admission-documents' => [
+            'items' => [
+                [
+                    'key' => 'documents', 'label' => 'Документы для поступления', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'title', 'label' => 'Название', 'type' => 'text'],
+                        ['key' => 'url',   'label' => 'Файл',     'type' => 'file'],
+                    ],
+                ],
+            ],
+        ],
+        'accreditation-documents' => [
+            'items' => [
+                [
+                    'key' => 'documents', 'label' => 'Сертификаты / лицензии', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'title', 'label' => 'Название',  'type' => 'text'],
+                        ['key' => 'image', 'label' => 'Превью',    'type' => 'image'],
+                        ['key' => 'url',   'label' => 'PDF-файл',  'type' => 'file'],
+                    ],
+                ],
+            ],
+        ],
+        // Простой action-button (используется как CTA-кнопка-иконка внутри
+        // страниц типа SDG portal).
+        'content' => [
+            'items' => [
+                ['key' => 'icon',     'label' => 'Иконка (FA или URL)', 'type' => 'text'],
+                ['key' => 'color',    'label' => 'Цвет',                'type' => 'text'],
+                ['key' => 'url',      'label' => 'Ссылка',              'type' => 'url'],
+                ['key' => 'style',    'label' => 'Стиль',               'type' => 'text'],
+                ['key' => 'position', 'label' => 'Позиция (число)',     'type' => 'number'],
             ],
         ],
         'social-links' => [

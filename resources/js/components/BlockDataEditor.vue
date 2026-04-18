@@ -13,9 +13,10 @@
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
-    modelValue: { type: String, default: '{}' },
-    schema:     { type: Object, required: true },
-    uploadUrl:  { type: String, default: '/admin/upload/image' },
+    modelValue:    { type: String, default: '{}' },
+    schema:        { type: Object, default: null },
+    uploadUrl:     { type: String, default: '/admin/upload/image' },
+    fileUploadUrl: { type: String, default: '/admin/upload/file' },
 });
 const emit = defineEmits(['update:modelValue']);
 
@@ -75,12 +76,12 @@ function moveItem(field, i, dir) {
 
 // ===== Image upload for `image` fields =====
 
-async function uploadImage(file) {
+async function doUpload(url, file) {
     const fd = new FormData();
     fd.append('file', file);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     fd.append('_token', csrf);
-    const res = await fetch(props.uploadUrl, {
+    const res = await fetch(url, {
         method: 'POST',
         body: fd,
         headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
@@ -89,20 +90,42 @@ async function uploadImage(file) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
     if (!json.url) throw new Error('No URL in response');
-    return json.url;
+    return json;
 }
 
 async function onImagePick(e, onSet) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-        const url = await uploadImage(file);
+        const { url } = await doUpload(props.uploadUrl, file);
         onSet(url);
     } catch (err) {
         alert('Ошибка загрузки: ' + err.message);
     } finally {
         e.target.value = '';
     }
+}
+
+async function onFilePick(e, onSet) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+        const res = await doUpload(props.fileUploadUrl, file);
+        // Pass the full metadata (url, filename, size, ext) so the
+        // consumer can choose to display the download label.
+        onSet(res);
+    } catch (err) {
+        alert('Ошибка загрузки: ' + err.message);
+    } finally {
+        e.target.value = '';
+    }
+}
+
+function formatSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
 }
 
 // Backwards-compat: if schema item is a scalar top-level field (not
@@ -166,7 +189,22 @@ async function onImagePick(e, onSet) {
                                     </label>
                                 </div>
 
-                                <input v-else :type="sub.type === 'url' ? 'url' : 'text'" v-model="row[sub.key]"
+                                <div v-else-if="sub.type === 'file'" class="flex items-center gap-2">
+                                    <input v-model="row[sub.key]" type="text" placeholder="URL файла"
+                                        class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                                    <label class="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200" title="PDF, DOC, XLS, ZIP…">
+                                        <i class="fas fa-file-arrow-up text-xs"></i>
+                                        <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden"
+                                            @change="onFilePick($event, res => {
+                                                row[sub.key] = res.url;
+                                                if (row.filename === undefined || !row.filename) row.filename = res.filename;
+                                                if (row.size === undefined) row.size = res.size;
+                                                if (row.ext === undefined) row.ext = res.ext;
+                                            })">
+                                    </label>
+                                </div>
+
+                                <input v-else :type="sub.type === 'url' ? 'url' : sub.type === 'number' ? 'number' : 'text'" v-model="row[sub.key]"
                                     :placeholder="sub.placeholder || ''"
                                     class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
                             </div>
@@ -191,7 +229,16 @@ async function onImagePick(e, onSet) {
                     </label>
                 </div>
 
-                <input v-else :type="field.type === 'url' ? 'url' : 'text'" v-model="data[field.key]"
+                <div v-else-if="field.type === 'file'" class="flex items-center gap-2">
+                    <input v-model="data[field.key]" type="text" placeholder="URL файла"
+                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                    <label class="flex-shrink-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-lg text-sm cursor-pointer text-gray-700 dark:text-gray-200" title="PDF, DOC, XLS, ZIP…">
+                        <i class="fas fa-file-arrow-up text-xs mr-1"></i>Файл
+                        <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden" @change="onFilePick($event, res => data[field.key] = res.url)">
+                    </label>
+                </div>
+
+                <input v-else :type="field.type === 'url' ? 'url' : field.type === 'number' ? 'number' : 'text'" v-model="data[field.key]"
                     :placeholder="field.placeholder || ''"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
             </div>

@@ -50,6 +50,12 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::put( '/theme',       [\Meta\AdminCore\Http\Controllers\ThemeController::class, 'update'])->name('theme.update');
     Route::post('/theme/reset', [\Meta\AdminCore\Http\Controllers\ThemeController::class, 'reset'])->name('theme.reset');
 
+    // Generic file / image uploads used by the rich text editor and
+    // the PageBlock data editor. Consumer-specific uploadImage routes
+    // shadow this by default (they register first).
+    Route::post('/upload/image', [\Meta\AdminCore\Http\Controllers\UploadController::class, 'uploadImage'])->name('upload.image.package');
+    Route::post('/upload/file',  [\Meta\AdminCore\Http\Controllers\UploadController::class, 'uploadFile'])->name('upload.file');
+
     // Media library
     Route::get(   '/media',          [\Meta\AdminCore\Http\Controllers\MediaController::class, 'index'])->name('media.index');
     Route::post(  '/media',          [\Meta\AdminCore\Http\Controllers\MediaController::class, 'store'])->name('media.store');
