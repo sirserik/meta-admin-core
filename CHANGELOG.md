@@ -5,6 +5,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-04-18
+
+### Added
+- **Packaged feature modules.** New `Meta\AdminCore\Features\FeatureModule`
+  abstract class + built-in `GreenDealFeature` module. The package now
+  ships the registration logic for optional features, so consumer sites
+  don't need to re-declare `AdminCore::resource(...)` blocks in each
+  `AppServiceProvider`. Add a module to `builtInFeatures()` in the
+  service provider once → all 100+ consumer sites pick it up on
+  `composer update`.
+- **Admin UI for feature toggles** at `/admin/features`. Each feature
+  is a card with a switch; toggle writes `feature.<name>` to the
+  `settings` table. Unavailable features (missing model, missing
+  migration) render as disabled cards with a reason banner instead of
+  crashing at boot.
+- **DB override for feature flags.** `AdminCore::enabled($name)` now
+  consults the `settings` table before falling back to
+  `config('admin-core.features.*')` / `.env`. This means an admin
+  toggle survives deploys and overrides `.env`.
+- Sidebar auto-adds "Фичи" (fa-toggle-on) and "Обновления"
+  (fa-cloud-arrow-down) under the "Система" group.
+
+### Changed
+- Built-in `GreenDealFeature` replaces the per-site
+  `AdminCore::whenEnabled('green_deal', ...)` block that consumers
+  (ETU, etec) used to carry in `AppServiceProvider`. Those blocks can
+  now be removed.
+
 ## [0.15.0] — 2026-04-18
 
 ### Added

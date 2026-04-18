@@ -8,6 +8,18 @@ use Illuminate\Support\ServiceProvider;
 
 class AdminCoreServiceProvider extends ServiceProvider
 {
+    /**
+     * Built-in feature modules shipped with the package. Each is a class
+     * extending Meta\AdminCore\Features\FeatureModule.
+     */
+    protected function builtInFeatures(): array
+    {
+        return [
+            \Meta\AdminCore\Features\GreenDealFeature::class,
+            // Add more here: SdgFeature, LibraryFeature, ...
+        ];
+    }
+
     public function register(): void
     {
         $this->app->singleton(AdminCore::class, fn () => new AdminCore());
@@ -38,16 +50,23 @@ class AdminCoreServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
 
-            // Ship the "Updates" menu item from the package — every consumer
-            // gets it without adding a line to their AppServiceProvider.
             if ($this->app->bound(AdminCore::class)) {
-                $this->app->make(AdminCore::class)->menuItem(
-                    'Обновления',
-                    '/' . config('admin-core.prefix', 'admin') . '/updates',
-                    'fa-cloud-arrow-down',
-                    'Система',
-                    99
-                );
+                $core = $this->app->make(AdminCore::class);
+
+                // Register built-in feature modules. Each self-registers its
+                // resources / menu items only if its feature flag is on.
+                foreach ($this->builtInFeatures() as $class) {
+                    $module = new $class;
+                    $core->registerFeature($module);
+                    if ($module->available() && $core->enabled($module->name())) {
+                        $module->register($core);
+                    }
+                }
+
+                // Ship "Обновления" + "Фичи" menu items for every consumer.
+                $prefix = config('admin-core.prefix', 'admin');
+                $core->menuItem('Фичи',       "/{$prefix}/features", 'fa-toggle-on',       'Система', 98);
+                $core->menuItem('Обновления', "/{$prefix}/updates",  'fa-cloud-arrow-down','Система', 99);
             }
         });
 

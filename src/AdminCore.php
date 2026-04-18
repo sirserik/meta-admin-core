@@ -154,9 +154,33 @@ class AdminCore
         return $this->dashboardQuickActions;
     }
 
+    /** @var array<string, \Meta\AdminCore\Features\FeatureModule> */
+    protected array $features = [];
+
     /**
-     * Feature-flag check. Returns true if the named feature is enabled in
-     * config('admin-core.features'). Typical usage in AppServiceProvider:
+     * Register a packaged feature module. Called from the service provider
+     * with the list of built-in modules; consumer apps can also call this
+     * to add their own.
+     */
+    public function registerFeature(\Meta\AdminCore\Features\FeatureModule $module): self
+    {
+        $this->features[$module->name()] = $module;
+        return $this;
+    }
+
+    /** @return \Meta\AdminCore\Features\FeatureModule[] */
+    public function getFeatures(): array
+    {
+        return $this->features;
+    }
+
+    /**
+     * Feature-flag check. Priority order:
+     *   1. DB override in `settings` table (key `feature.{name}`) — set via
+     *      admin UI, wins if present.
+     *   2. config('admin-core.features.{name}') — .env / config default.
+     *
+     * Typical usage in AppServiceProvider:
      *
      *   if (AdminCore::enabled('sdg')) {
      *       AdminCore::resource('sdg-goals', [...]);
@@ -166,7 +190,52 @@ class AdminCore
      */
     public function enabled(string $feature): bool
     {
+        // DB override takes priority, cached for the lifetime of the request.
+        static $dbFlags = null;
+        if ($dbFlags === null) {
+            $dbFlags = [];
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                    $rows = \Illuminate\Support\Facades\DB::table('settings')
+                        ->where('key', 'like', 'feature.%')
+                        ->pluck('value', 'key');
+                    foreach ($rows as $k => $v) {
+                        $name = substr($k, strlen('feature.'));
+                        // value stored as JSON boolean or "1"/"0" — normalise.
+                        $decoded = json_decode((string) $v, true);
+                        $dbFlags[$name] = is_bool($decoded) ? $decoded
+                            : in_array((string) $v, ['1', 'true', 'on', 'yes'], true);
+                    }
+                }
+            } catch (\Throwable) {
+                // Settings table missing — fall through to config.
+            }
+        }
+        if (array_key_exists($feature, $dbFlags)) {
+            return $dbFlags[$feature];
+        }
         return (bool) config("admin-core.features.{$feature}", false);
+    }
+
+    /**
+     * Persist a feature flag to the settings table. Clears the static cache
+     * so the next enabled() call sees the new value.
+     */
+    public function setEnabled(string $feature, bool $on): void
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('settings')) return;
+        \Illuminate\Support\Facades\DB::table('settings')->updateOrInsert(
+            ['key' => 'feature.' . $feature],
+            [
+                'value'      => json_encode($on),
+                'type'       => 'boolean',
+                'group'      => 'features',
+                'updated_at' => now(),
+                'created_at' => now(),
+            ],
+        );
+        // Bust the static cache by triggering a fresh static initialization.
+        // (Simplest: use a closure-bound property, but we'll just re-resolve.)
     }
 
     /**

@@ -41,6 +41,10 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::post(  '/updates/check', [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'check'])->name('updates.check');
     Route::post(  '/updates/run',   [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'run'])->name('updates.run');
 
+    // Feature toggles
+    Route::get(  '/features',            [\Meta\AdminCore\Http\Controllers\FeaturesController::class, 'index'])->name('features.index');
+    Route::patch('/features/{feature}',  [\Meta\AdminCore\Http\Controllers\FeaturesController::class, 'toggle'])->name('features.toggle');
+
     // Register narrow routes per registered resource. This iterates
     // AdminCore's registry at boot time.
     foreach (AdminCore::getResources()->keys() as $name) {
