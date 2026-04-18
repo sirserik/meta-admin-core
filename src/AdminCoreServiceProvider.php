@@ -26,6 +26,7 @@ class AdminCoreServiceProvider extends ServiceProvider
         $this->app->alias(AdminCore::class, 'admin-core');
 
         $this->mergeConfigFrom(__DIR__ . '/../config/admin-core.php', 'admin-core');
+        $this->mergeConfigFrom(__DIR__ . '/../config/theme.php', 'theme');
     }
 
     public function boot(): void
@@ -48,6 +49,10 @@ class AdminCoreServiceProvider extends ServiceProvider
         //     when we add our per-resource routes last, they don't shadow
         //     specific consumer routes.
         $this->app->booted(function () {
+            // Public fallback routes (media serving, etc.) — loaded inside
+            // the `web` middleware group so sessions/cookies are available.
+            Route::middleware('web')->group(__DIR__ . '/../routes/public.php');
+
             $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
 
             if ($this->app->bound(AdminCore::class)) {
@@ -65,6 +70,9 @@ class AdminCoreServiceProvider extends ServiceProvider
 
                 // Ship "Обновления" + "Фичи" menu items for every consumer.
                 $prefix = config('admin-core.prefix', 'admin');
+                $core->menuItem('Настройки',  "/{$prefix}/settings", 'fa-sliders',         'Система', 93);
+                $core->menuItem('Медиа',      "/{$prefix}/media",    'fa-photo-film',      'Система', 94);
+                $core->menuItem('Тема сайта', "/{$prefix}/theme",    'fa-palette',         'Система', 95);
                 $core->menuItem('Фичи',       "/{$prefix}/features", 'fa-toggle-on',       'Система', 98);
                 $core->menuItem('Обновления', "/{$prefix}/updates",  'fa-cloud-arrow-down','Система', 99);
             }
@@ -87,6 +95,7 @@ class AdminCoreServiceProvider extends ServiceProvider
         // Publishable config
         $this->publishes([
             __DIR__ . '/../config/admin-core.php' => config_path('admin-core.php'),
+            __DIR__ . '/../config/theme.php'      => config_path('theme.php'),
         ], 'admin-core-config');
 
         // Publishable Vue/CSS assets — consumers either publish to their resources/js

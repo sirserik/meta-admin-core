@@ -1,5 +1,25 @@
 <?php
 
+if (!function_exists('media_url')) {
+    /**
+     * Build a public URL to a storage file.
+     *
+     * Plesk/Nginx sometimes intercepts `/storage/` as a static-file
+     * location and bypasses Laravel's routing. We route through `/media/`
+     * instead (served by a package fallback route) so the same URL
+     * works whether Nginx serves it directly from `public/media/` or
+     * Laravel streams it from `storage/app/public/`.
+     *
+     *   media_url('management/1.jpg') => https://host/media/management/1.jpg
+     */
+    function media_url(string $path): string
+    {
+        $path = preg_replace('#^/?storage/#', '', $path);
+        $parts = array_map('rawurlencode', explode('/', $path));
+        return url('media/' . implode('/', $parts));
+    }
+}
+
 if (!function_exists('admin_core_route')) {
     /**
      * Build a URL to a resource action: edit, index, destroy…

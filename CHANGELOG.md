@@ -5,6 +5,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-04-18
+
+### Added
+- **Theme subsystem shipped by the package.** Moved `ThemeService` +
+  `ThemeController` + `config/theme.php` from per-site `App\Services`
+  / `App\Http\Controllers\Admin\Spa` into the package so every
+  consumer gets the same token schema and admin UI on
+  `composer update`. DB override merging is now recursive so the
+  admin UI can override any token, not just `primary`/`accent`.
+  Routes: `GET /admin/theme`, `PUT /admin/theme`, `POST /admin/theme/reset`.
+- **Media library shipped by the package.** New
+  `Meta\AdminCore\Models\Media` (table `media_legacy`),
+  `Meta\AdminCore\Services\ImageService` (WebP conversion via
+  Intervention Image with graceful fallback), `MediaController`
+  (list/upload/rename/delete), plus migration
+  `2026_04_18_000006_create_media_legacy_table.php`.
+  Routes: `GET|POST /admin/media`, `PUT|DELETE /admin/media/{medium}`.
+- **`/media/{path}` public fallback route** in `routes/public.php` —
+  serves files from `public/media/` or `storage/app/public/`. Fixes
+  the "broken thumbnail everywhere" issue on Plesk installs where
+  Nginx intercepts `/storage/`.
+- **`media_url()` helper** autoloaded from the package (no more per-
+  site `App\Helpers\helpers.php` copies).
+- **Settings controller shipped by the package.** New
+  `Meta\AdminCore\Models\Setting` (cache-aware, with `get()`/`set()`
+  helpers), `SettingsController` with grouped Inertia UI + locale
+  tabs, `SettingUpdated` event for consumer-side side-effects
+  (e.g. syncing `university_name` into a hero block).
+  Routes: `GET /admin/settings`, `PUT /admin/settings/{id}`.
+- Sidebar auto-adds "Медиа" (fa-photo-film) and "Тема сайта"
+  (fa-palette) under "Система".
+
+### Changed
+- `create_settings_table` migration now ships `description` (TEXT)
+  instead of `label` + `sort_order` — matches the schema existing
+  consumer sites already have so fresh installs don't diverge.
+
 ## [0.16.0] — 2026-04-18
 
 ### Added

@@ -10,14 +10,17 @@ return new class extends Migration
     {
         if (Schema::hasTable('settings')) return;
 
+        // Schema matches what existing consumer sites (ETU, etec) already
+        // have so a fresh install ends up with a compatible table out of
+        // the box. Existing sites hit the Schema::hasTable guard above
+        // and keep their rows unchanged.
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
             $table->string('key', 100)->unique();
             $table->text('value')->nullable();
             $table->string('type', 50)->default('text'); // text | textarea | boolean | number | json
-            $table->string('label', 255)->nullable();
+            $table->text('description')->nullable();
             $table->string('group', 100)->default('general');
-            $table->integer('sort_order')->default(0);
             $table->timestamps();
 
             $table->index('group');

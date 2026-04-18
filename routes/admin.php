@@ -45,6 +45,21 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::get(  '/features',            [\Meta\AdminCore\Http\Controllers\FeaturesController::class, 'index'])->name('features.index');
     Route::patch('/features/{feature}',  [\Meta\AdminCore\Http\Controllers\FeaturesController::class, 'toggle'])->name('features.toggle');
 
+    // Design-token theme
+    Route::get( '/theme',       [\Meta\AdminCore\Http\Controllers\ThemeController::class, 'index'])->name('theme.index');
+    Route::put( '/theme',       [\Meta\AdminCore\Http\Controllers\ThemeController::class, 'update'])->name('theme.update');
+    Route::post('/theme/reset', [\Meta\AdminCore\Http\Controllers\ThemeController::class, 'reset'])->name('theme.reset');
+
+    // Media library
+    Route::get(   '/media',          [\Meta\AdminCore\Http\Controllers\MediaController::class, 'index'])->name('media.index');
+    Route::post(  '/media',          [\Meta\AdminCore\Http\Controllers\MediaController::class, 'store'])->name('media.store');
+    Route::put(   '/media/{medium}', [\Meta\AdminCore\Http\Controllers\MediaController::class, 'update'])->name('media.update');
+    Route::delete('/media/{medium}', [\Meta\AdminCore\Http\Controllers\MediaController::class, 'destroy'])->name('media.destroy');
+
+    // Key-value settings (name/email/phone/social-links text-style rows).
+    Route::get('/settings',          [\Meta\AdminCore\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+    Route::put('/settings/{id}',     [\Meta\AdminCore\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
+
     // Register narrow routes per registered resource. This iterates
     // AdminCore's registry at boot time.
     foreach (AdminCore::getResources()->keys() as $name) {
