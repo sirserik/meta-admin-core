@@ -69,11 +69,22 @@ class PresentedBlock
      */
     public function __get(string $name): mixed
     {
+        // Back-compat: legacy templates do `$block->data['slides']` and
+        // `$block->settings['bg_color']` — give them the raw arrays.
+        if ($name === 'data')     return $this->data;
+        if ($name === 'settings') return $this->settings;
+
         if (array_key_exists($name, $this->data)) {
             return $this->resolve($this->data[$name]);
         }
         if (array_key_exists($name, $this->settings)) {
             return $this->resolve($this->settings[$name]);
+        }
+
+        // Final fallback: forward to the underlying model for fields
+        // like image_url, is_active, slug — untouched.
+        if (isset($this->model->{$name})) {
+            return $this->model->{$name};
         }
         return null;
     }
@@ -96,6 +107,36 @@ class PresentedBlock
         return $this->data[$name]
             ?? $this->settings[$name]
             ?? null;
+    }
+
+    /**
+     * Backwards-compat shim for templates still calling ->translate().
+     * Forwards to the underlying model's translate() if available, or
+     * reads the field directly for the given locale.
+     */
+    public function translate(string $field, ?string $locale = null): mixed
+    {
+        $locale ??= $this->locale;
+        if (method_exists($this->model, 'translate')) {
+            return $this->model->translate($field, $locale);
+        }
+        $raw = $this->model->{$field} ?? null;
+        if (is_array($raw)) return $raw[$locale] ?? $raw['ru'] ?? null;
+        return $raw;
+    }
+
+    /**
+     * Pass through arbitrary property access to the underlying model
+     * when it's not a data/settings key — templates that still read
+     * `$block->image_url`, `$block->is_active`, etc. keep working during
+     * migration.
+     */
+    public function __call(string $name, array $args): mixed
+    {
+        if (method_exists($this->model, $name)) {
+            return $this->model->{$name}(...$args);
+        }
+        throw new \BadMethodCallException("Method {$name} not found on PresentedBlock");
     }
 
     /** Full augmented payload, useful for handing to JSON / API endpoints. */
