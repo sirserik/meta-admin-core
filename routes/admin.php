@@ -60,6 +60,51 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::get('/settings',          [\Meta\AdminCore\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings/{id}',     [\Meta\AdminCore\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
 
+    // Admin audit log
+    Route::get('/activity',          [\Meta\AdminCore\Http\Controllers\ActivityController::class, 'index'])->name('activity.index');
+
+    // Cache management
+    Route::get( '/cache',            [\Meta\AdminCore\Http\Controllers\CacheController::class, 'index'])->name('cache.index');
+    Route::post('/cache/flush',      [\Meta\AdminCore\Http\Controllers\CacheController::class, 'flush'])->name('cache.flush');
+
+    // SQLite + storage backups
+    Route::get(   '/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'index'])->name('backup.index');
+    Route::post(  '/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'create'])->name('backup.create');
+    Route::get(   '/backup/download', [\Meta\AdminCore\Http\Controllers\BackupController::class, 'download'])->name('backup.download');
+    Route::delete('/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'destroy'])->name('backup.destroy');
+
+    // Inbound leads (admission + consultation requests)
+    Route::get(   '/leads',             [\Meta\AdminCore\Http\Controllers\LeadController::class, 'index'])->name('leads.index');
+    Route::get(   '/leads/{id}',        [\Meta\AdminCore\Http\Controllers\LeadController::class, 'show'])->name('leads.show');
+    Route::patch( '/leads/{id}/status', [\Meta\AdminCore\Http\Controllers\LeadController::class, 'updateStatus'])->name('leads.update-status');
+    Route::delete('/leads/{id}',        [\Meta\AdminCore\Http\Controllers\LeadController::class, 'destroy'])->name('leads.destroy');
+
+    // Site-wide specialised settings (social links, rector contact, secondary logo, menu toggles).
+    Route::get( '/site-settings',                 [\Meta\AdminCore\Http\Controllers\SiteSettingsController::class, 'index'])->name('site-settings.index');
+    Route::put( '/site-settings/social-media',    [\Meta\AdminCore\Http\Controllers\SiteSettingsController::class, 'updateSocialMedia'])->name('site-settings.social-media');
+    Route::put( '/site-settings/rector',          [\Meta\AdminCore\Http\Controllers\SiteSettingsController::class, 'updateRector'])->name('site-settings.rector');
+    Route::post('/site-settings/secondary-logo',  [\Meta\AdminCore\Http\Controllers\SiteSettingsController::class, 'updateSecondaryLogo'])->name('site-settings.secondary-logo');
+    Route::put( '/site-settings/menu',            [\Meta\AdminCore\Http\Controllers\SiteSettingsController::class, 'updateMenu'])->name('site-settings.menu');
+
+    // Hierarchical navigation tree (per-locale titles + URLs).
+    Route::get(   '/menu',           [\Meta\AdminCore\Http\Controllers\MenuController::class, 'index'])->name('menu.index');
+    Route::post(  '/menu',           [\Meta\AdminCore\Http\Controllers\MenuController::class, 'store'])->name('menu.store');
+    Route::put(   '/menu/{id}',      [\Meta\AdminCore\Http\Controllers\MenuController::class, 'update'])->name('menu.update');
+    Route::delete('/menu/{id}',      [\Meta\AdminCore\Http\Controllers\MenuController::class, 'destroy'])->name('menu.destroy');
+    Route::post(  '/menu/reorder',   [\Meta\AdminCore\Http\Controllers\MenuController::class, 'reorder'])->name('menu.reorder');
+
+    // Page builder blocks (hero, gallery, stats, …).
+    Route::get(   '/blocks',                      [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'index'])->name('blocks.index');
+    Route::get(   '/blocks/create',               [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'create'])->name('blocks.create');
+    Route::post(  '/blocks',                      [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'store'])->name('blocks.store');
+    Route::get(   '/blocks/{id}/edit',            [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'edit'])->name('blocks.edit');
+    Route::put(   '/blocks/{id}',                 [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'update'])->name('blocks.update');
+    Route::delete('/blocks/{id}',                 [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'destroy'])->name('blocks.destroy');
+    Route::patch( '/blocks/{id}/toggle-active',   [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'toggleActive'])->name('blocks.toggle-active');
+    Route::patch( '/blocks/{id}/publish',         [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'publish'])->name('blocks.publish');
+    Route::patch( '/blocks/{id}/unpublish',       [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'unpublish'])->name('blocks.unpublish');
+    Route::post(  '/blocks/reorder',              [\Meta\AdminCore\Http\Controllers\PageBlockController::class, 'reorder'])->name('blocks.reorder');
+
     // Register narrow routes per registered resource. This iterates
     // AdminCore's registry at boot time.
     foreach (AdminCore::getResources()->keys() as $name) {

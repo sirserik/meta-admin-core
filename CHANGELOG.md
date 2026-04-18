@@ -5,6 +5,40 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-04-18
+
+### Added
+- **Full admin suite shipped from the package.** Seven more admin
+  subsystems moved out of per-site `App\Http\Controllers\Admin\Spa`
+  into `Meta\AdminCore\Http\Controllers`:
+  - `ActivityController` (`/admin/activity`) + `ActivityLog` model
+  - `BackupController` (`/admin/backup`) — SQLite + storage zips
+  - `CacheController` (`/admin/cache`) + `CacheService` with
+    config-driven groups (`config('admin-core.cache_groups')`)
+  - `LeadController` (`/admin/leads`) + `Lead` model + migration
+    + `LeadCreated` event for consumer-side notifications
+  - `MenuController` (`/admin/menu`) + `MenuItem` model + migration
+  - `PageBlockController` (`/admin/blocks`) + `PageBlock` model +
+    migration. The UI catalog (pages, block types, labels) is now
+    injected via `Meta\AdminCore\Contracts\BlockCatalog`; a minimal
+    `DefaultBlockCatalog` ships with the package, consumers rebind
+    the contract to their own catalog class.
+  - `SiteSettingsController` (`/admin/site-settings`) — social links,
+    rector contact, secondary logo, menu toggles. Menu keys and
+    social networks come from
+    `config('admin-core.site_settings.*')`.
+- **Translation infrastructure** moved into the package:
+  `Meta\AdminCore\Models\Translation` + `Meta\AdminCore\Concerns\Translatable`
+  trait. Consumer models can opt into it without touching
+  `App\Traits\Translatable`.
+- `LeadCreated` event for admin notifications / CRM push — keeps the
+  model free of per-site notification classes.
+
+### Changed
+- Sidebar auto-adds seven more «Система» items: Заявки, Активность,
+  Бэкапы, Общие, Меню, Блоки, Кэш (alongside Настройки / Медиа /
+  Тема сайта / Фичи / Обновления from v0.17.0).
+
 ## [0.17.0] — 2026-04-18
 
 ### Added

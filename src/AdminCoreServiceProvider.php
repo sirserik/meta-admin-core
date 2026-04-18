@@ -27,6 +27,13 @@ class AdminCoreServiceProvider extends ServiceProvider
 
         $this->mergeConfigFrom(__DIR__ . '/../config/admin-core.php', 'admin-core');
         $this->mergeConfigFrom(__DIR__ . '/../config/theme.php', 'theme');
+
+        // Default BlockCatalog — consumers override by rebinding the
+        // contract in their own service provider.
+        $this->app->bind(
+            \Meta\AdminCore\Contracts\BlockCatalog::class,
+            \Meta\AdminCore\Support\DefaultBlockCatalog::class,
+        );
     }
 
     public function boot(): void
@@ -70,9 +77,16 @@ class AdminCoreServiceProvider extends ServiceProvider
 
                 // Ship "Обновления" + "Фичи" menu items for every consumer.
                 $prefix = config('admin-core.prefix', 'admin');
-                $core->menuItem('Настройки',  "/{$prefix}/settings", 'fa-sliders',         'Система', 93);
+                $core->menuItem('Заявки',     "/{$prefix}/leads",         'fa-inbox',            'Система', 90);
+                $core->menuItem('Активность', "/{$prefix}/activity",      'fa-clock-rotate-left','Система', 91);
+                $core->menuItem('Бэкапы',     "/{$prefix}/backup",        'fa-box-archive',      'Система', 92);
+                $core->menuItem('Настройки',  "/{$prefix}/settings",      'fa-sliders',          'Система', 93);
+                $core->menuItem('Общие',      "/{$prefix}/site-settings", 'fa-gears',            'Система', 93);
+                $core->menuItem('Меню',       "/{$prefix}/menu",          'fa-bars',             'Система', 94);
+                $core->menuItem('Блоки',      "/{$prefix}/blocks",        'fa-cubes',            'Система', 94);
                 $core->menuItem('Медиа',      "/{$prefix}/media",    'fa-photo-film',      'Система', 94);
                 $core->menuItem('Тема сайта', "/{$prefix}/theme",    'fa-palette',         'Система', 95);
+                $core->menuItem('Кэш',        "/{$prefix}/cache",    'fa-broom',           'Система', 96);
                 $core->menuItem('Фичи',       "/{$prefix}/features", 'fa-toggle-on',       'Система', 98);
                 $core->menuItem('Обновления', "/{$prefix}/updates",  'fa-cloud-arrow-down','Система', 99);
             }
