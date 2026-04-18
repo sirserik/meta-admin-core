@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.26.0] — 2026-04-18
+
+### Fixed
+- **`PresentedBlock::__isset` now mirrors `__get`'s lookup chain.** Before,
+  `isset($block->block_key)` / `isset($block->is_active)` returned `false`
+  for model attributes, which silently broke Laravel Collection helpers
+  like `$blocks->firstWhere('block_key', 'vision')` and
+  `$blocks->where('is_active', true)` (both use `data_get → isset`).
+  Symptom on consumers: sub-partials that cross-reference sibling blocks
+  (e.g. `mission.blade.php` pulling its paired `vision` block) rendered
+  nothing. Covered by new regression tests
+  (`test_isset_mirrors_get_including_model_attributes`,
+  `test_collection_firstWhere_finds_by_model_attribute`).
+
+### Notes
+- **Readonly prop shadow gotcha.** `PresentedBlock` declares readonly props
+  `id`, `key`, `type`, `title`, `subtitle`, `content`, `status`, `sort`,
+  `locale`. These are accessed directly (never through `__get`), so if a
+  block's raw `data` has a key with the same name (commonly `data['type']`
+  for content sub-routing like `'accreditation-status'`), `$block->type`
+  returns the outer `block_type` ("content"), not the inner data value.
+  Templates that need the data value must use `$block->data['type']`
+  (or `$block->raw('type')`). The bulk `data['x']` → `x` rewrite cannot be
+  applied blindly for these reserved names. Pinned by
+  `test_readonly_props_shadow_conflicting_data_keys`.
+
 ## [0.20.0] — 2026-04-18
 
 ### Added

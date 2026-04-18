@@ -89,9 +89,21 @@ class PresentedBlock
         return null;
     }
 
+    /**
+     * Mirrors __get's lookup chain so `isset($block->foo)` / `data_get`
+     * / Collection::firstWhere() agree with what the magic getter returns.
+     * Also covers the declared readonly props (id/key/type/title/…)
+     * so isset() on those is truthful.
+     */
     public function __isset(string $name): bool
     {
-        return $this->has($name);
+        if (in_array($name, ['data', 'settings', 'id', 'key', 'type',
+            'title', 'subtitle', 'content', 'status', 'sort', 'locale'], true)) {
+            return true;
+        }
+        if (array_key_exists($name, $this->data))     return true;
+        if (array_key_exists($name, $this->settings)) return true;
+        return isset($this->model->{$name});
     }
 
     /** True if a data or settings key exists (regardless of value). */

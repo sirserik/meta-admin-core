@@ -86,6 +86,71 @@ class PresentedBlockTest extends TestCase
         $this->assertSame('en', $arr['locale']);
     }
 
+    public function test_isset_mirrors_get_including_model_attributes(): void
+    {
+        // Regression: Collection::firstWhere('block_key', ...) uses data_get
+        // → __isset. Before the fix, model attrs returned false here, so
+        // Laravel filters silently dropped every PresentedBlock.
+        $block = $this->fakeBlock([
+            'block_key' => 'hero',
+            'data'      => ['cards' => [['title' => 'A']]],
+            'settings'  => ['bg' => 'red'],
+        ]);
+        // Forge an ad-hoc attribute that isn't declared on the default fake.
+        $block->is_active = true;
+
+        $p = new PresentedBlock($block, 'ru');
+
+        // Declared readonly props always visible.
+        $this->assertTrue(isset($p->id));
+        $this->assertTrue(isset($p->key));
+        $this->assertTrue(isset($p->title));
+        $this->assertTrue(isset($p->locale));
+
+        // Data / settings keys.
+        $this->assertTrue(isset($p->cards));
+        $this->assertTrue(isset($p->bg));
+
+        // Model attributes reachable via __get MUST also be reachable via isset.
+        $this->assertTrue(isset($p->block_key));
+        $this->assertTrue(isset($p->block_type));
+        $this->assertTrue(isset($p->is_active));
+
+        // Truly missing keys → false.
+        $this->assertFalse(isset($p->nonexistent));
+    }
+
+    public function test_collection_firstWhere_finds_by_model_attribute(): void
+    {
+        // End-to-end flavor of the above regression.
+        $items = collect([
+            new PresentedBlock($this->fakeBlock(['id' => 1, 'block_key' => 'hero']), 'ru'),
+            new PresentedBlock($this->fakeBlock(['id' => 2, 'block_key' => 'vision']), 'ru'),
+            new PresentedBlock($this->fakeBlock(['id' => 3, 'block_key' => 'cta']), 'ru'),
+        ]);
+
+        $vision = $items->firstWhere('block_key', 'vision');
+        $this->assertNotNull($vision);
+        $this->assertSame(2, $vision->id);
+    }
+
+    public function test_readonly_props_shadow_conflicting_data_keys(): void
+    {
+        // Documented behaviour: PresentedBlock exposes readonly `type`, `id`,
+        // `status`, `sort`, `locale` that shadow same-named data keys.
+        // Templates that need the inner value must use $block->data['type']
+        // or $block->raw('type'). This test pins the contract.
+        $block = $this->fakeBlock([
+            'block_type' => 'content',
+            'data'       => ['type' => 'accreditation-status'],
+        ]);
+        $p = new PresentedBlock($block, 'ru');
+
+        $this->assertSame('content', $p->type);                        // readonly wins
+        $this->assertSame('accreditation-status', $p->data['type']);   // data still reachable
+        $this->assertSame('accreditation-status', $p->raw('type'));    // raw() bypasses shadow
+    }
+
     // Helpers ----------------------------------------------------------
 
     protected function fakeBlock(array $overrides = []): object
