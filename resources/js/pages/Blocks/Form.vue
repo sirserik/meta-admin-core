@@ -68,7 +68,7 @@ function submit() {
     dataError.value = validateJson(form.blockData);
     settingsError.value = validateJson(form.blockSettings);
     if (dataError.value || settingsError.value) return;
-    if (props.isEdit) form.put(`/admin/blocks/${props.item.id}`, { preserveScroll: true });
+    if (props.isEdit) form.put(`/admin/blocks/${props.item.id}`);
     else form.post('/admin/blocks');
 }
 function destroy() {

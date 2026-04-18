@@ -127,7 +127,7 @@ class PageBlockController extends Controller
         $this->persistTranslations($block, $data);
 
         return redirect()
-            ->route('admin.blocks.edit', $block)
+            ->route('admin.blocks.index', ['page' => $block->page_name])
             ->with('success', 'Блок создан');
     }
 
@@ -151,7 +151,11 @@ class PageBlockController extends Controller
         ]);
         $this->persistTranslations($block, $data);
 
-        return back()->with('success', 'Блок сохранён');
+        // Back to the page-filtered block list so the user can see the
+        // row in its context and keep editing other blocks of that page.
+        return redirect()
+            ->route('admin.blocks.index', ['page' => $block->page_name])
+            ->with('success', 'Блок сохранён');
     }
 
     public function destroy(int $id): RedirectResponse
