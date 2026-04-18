@@ -5,6 +5,40 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.27.0] — 2026-04-18
+
+### Added
+- **Typed block DTOs.** `PresentedBlock` gains three typed subclasses —
+  `HeroBlock`, `LinksBlock`, `StatsBlock` — each with explicit field
+  accessors and normalized defaults so templates drop the `?? []`,
+  `isset()`, `is_array()` boilerplate:
+  ```blade
+  @foreach ($block->items() as $link)            {{-- LinksBlock --}}
+      <a href="{{ $link['url'] }}">{{ $link['title'] }}</a>
+  @endforeach
+  @foreach ($block->buttons() as $btn)           {{-- HeroBlock --}}
+      <a href="{{ $btn['url'] }}">{{ $btn['text'] }}</a>
+  @endforeach
+  ```
+  All subclasses extend `PresentedBlock`, so existing magic accessors
+  (`$block->title`, `$block->links`, `$block->stats`) keep working —
+  migration is purely additive.
+
+- **`BlockTypeRegistry`** maps `block_type` → DTO class, with a public
+  `register()` hook so consumers can extend from a service provider:
+  ```php
+  BlockTypeRegistry::register('pricing', \App\Content\Blocks\PricingBlock::class);
+  ```
+
+- **`PageBlockResolver::present()`** — static factory that instantiates
+  the right DTO for a raw block record. The resolver's `->get()` now
+  routes through it, so every block returned by `page_blocks(...)->get()`
+  is already the typed variant when one is registered.
+
+  Unknown block types fall back to the generic `PresentedBlock` — adding
+  a new block type is zero-friction, shipping a typed variant later is
+  a purely additive change.
+
 ## [0.26.0] — 2026-04-18
 
 ### Fixed

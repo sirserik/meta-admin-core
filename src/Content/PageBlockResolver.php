@@ -91,7 +91,7 @@ class PageBlockResolver
         if ($this->onlyTypes)      $query->whereIn('block_type', $this->onlyTypes);
 
         return $query->get()
-            ->map(fn ($b) => new PresentedBlock($b, $this->locale))
+            ->map(fn ($b) => self::present($b, $this->locale))
             ->keyBy(fn (PresentedBlock $b) => $b->key);
     }
 
@@ -111,5 +111,15 @@ class PageBlockResolver
     {
         if (class_exists('App\\Models\\PageBlock')) return 'App\\Models\\PageBlock';
         return \Meta\AdminCore\Models\PageBlock::class;
+    }
+
+    /**
+     * Instantiate the right PresentedBlock variant for the record's
+     * block_type — typed subclass if registered, generic otherwise.
+     */
+    public static function present(object $block, string $locale): PresentedBlock
+    {
+        $class = BlockTypeRegistry::classFor((string) ($block->block_type ?? ''));
+        return new $class($block, $locale);
     }
 }
