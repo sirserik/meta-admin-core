@@ -38,6 +38,12 @@ class AdminCore
     /** @var array<int, array<string, mixed>> */
     protected array $dashboardStats = [];
 
+    /** @var array<int, array<string, mixed>> — "recent items" widgets on dashboard */
+    protected array $dashboardRecent = [];
+
+    /** @var array<int, array<string, mixed>> — "quick action" buttons on dashboard */
+    protected array $dashboardQuickActions = [];
+
     public function resource(string $name, array $config): self
     {
         $config['name']          = $name;
@@ -81,13 +87,55 @@ class AdminCore
     }
 
     /**
-     * Добавить поставщика статистики для дашборда.
-     * Callback возвращает ['label' => …, 'value' => …, 'icon' => …].
+     * Dashboard KPI card provider.
+     * Callback returns ['label', 'value', 'icon', 'url' (optional, makes card clickable), 'trend' (optional subtitle)].
      */
     public function dashboardStat(callable $provider): self
     {
         $this->dashboardStats[] = $provider;
         return $this;
+    }
+
+    /**
+     * "Recent items" dashboard widget — renders last N rows from a
+     * registered resource as a small table with quick-edit links.
+     *
+     *   AdminCore::dashboardRecent('news', ['label' => 'Последние новости', 'limit' => 5]);
+     */
+    public function dashboardRecent(string $resource, array $opts = []): self
+    {
+        $this->dashboardRecent[] = array_merge([
+            'resource' => $resource,
+            'label'    => null,
+            'limit'    => 5,
+            'icon'     => null,
+        ], $opts);
+        return $this;
+    }
+
+    /**
+     * Quick action button on dashboard (e.g. "New article").
+     *
+     *   AdminCore::dashboardQuickAction(['label' => 'Новая новость', 'url' => '/admin/news/create', 'icon' => 'fa-plus']);
+     */
+    public function dashboardQuickAction(array $action): self
+    {
+        $this->dashboardQuickActions[] = array_merge([
+            'label' => '',
+            'url'   => '#',
+            'icon'  => 'fa-plus',
+        ], $action);
+        return $this;
+    }
+
+    public function getDashboardRecent(): array
+    {
+        return $this->dashboardRecent;
+    }
+
+    public function getDashboardQuickActions(): array
+    {
+        return $this->dashboardQuickActions;
     }
 
     public function getResources(): Collection

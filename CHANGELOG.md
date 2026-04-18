@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-04-18
+
+### Added
+- **Enriched dashboard.** The package's `Dashboard.vue` now renders:
+  - KPI cards with optional `url` (clickable, links to a resource) and
+    `trend` subtitle (e.g. "Новые: 3").
+  - "Recent items" widgets — latest N rows per resource registered via
+    the new `AdminCore::dashboardRecent('news', ['label' => …, 'limit' => 5])`.
+    Each row links to its edit page; widget header links to the index.
+  - Quick actions row — shortcut buttons registered via
+    `AdminCore::dashboardQuickAction(['label' => …, 'url' => …, 'icon' => …])`.
+- Standardised dashboard across consumer sites: drop the per-site
+  Dashboard.vue overrides, configure from `AppServiceProvider` and all
+  sites look identical.
+
+### Changed
+- `DashboardController` now queries the top-N rows for each registered
+  `dashboardRecent` provider and passes them to the Vue page along with
+  stats + quickActions.
+
+
 ## [0.5.1] — 2026-04-18
 
 ### Fixed
