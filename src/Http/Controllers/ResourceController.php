@@ -385,9 +385,16 @@ class ResourceController extends Controller
     protected function presentRow(Model $m, array $config): array
     {
         $prefix = config('admin-core.prefix', 'admin');
+        // Honour per-resource edit_url closure when set (lets resources
+        // redirect row clicks to a related resource, e.g. Pages → Blocks).
+        if (is_callable($config['edit_url'] ?? null)) {
+            $customUrl = call_user_func($config['edit_url'], $m);
+        } else {
+            $customUrl = url("/{$prefix}/{$config['name']}/{$m->getRouteKey()}/edit");
+        }
         $row = [
             'id'  => $m->id,
-            'url' => url("/{$prefix}/{$config['name']}/{$m->getRouteKey()}/edit"),
+            'url' => $customUrl,
         ];
         // Title/name
         foreach (['title', 'name'] as $f) {

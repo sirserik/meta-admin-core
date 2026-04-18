@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-04-18
+
+### Added
+- **`edit_url` config key on resources** — closure that overrides the
+  default `/admin/{resource}/{id}/edit` URL on the index list. Row
+  clicks go directly to the URL you return. Useful when a resource is
+  a façade over another (e.g. Pages → PageBlocks) and the intermediate
+  edit screen is just noise.
+  ```php
+  'edit_url' => fn ($item) => '/admin/blocks?page=' . $item->page_key,
+  ```
+
+
 ## [0.4.0] — 2026-04-18
 
 ### Added

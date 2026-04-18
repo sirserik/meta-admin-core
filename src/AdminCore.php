@@ -59,6 +59,12 @@ class AdminCore
         // form (useful for "edit related resource" CTAs). Otherwise renders
         // as a small button next to "Back to list" in the header.
         $config['actions']       = $config['actions']       ?? [];
+        // edit_url — closure that returns a custom URL for "edit" links in
+        // the index table. When set, row clicks skip the generic
+        // /admin/{resource}/{id}/edit screen and go where you say. Useful
+        // when a resource is really a façade over another (e.g. Pages →
+        // PageBlocks). Receives Eloquent model, returns string URL.
+        $config['edit_url']      = $config['edit_url']      ?? null;
         $config['image_field']   = $config['image_field']   ?? null;
         $config['route_key']     = $config['route_key']     ?? null; // null = use model default
         $config['per_page']      = $config['per_page']      ?? 15;
