@@ -41,6 +41,24 @@ function destroy(user) {
     router.delete(`/admin/users/${user.id}`, { preserveScroll: true });
 }
 
+// Edit modal
+const editing = ref(null);
+const editForm = useForm({ name: '', email: '', role: 'editor', password: '' });
+function openEdit(user) {
+    editing.value = user;
+    editForm.clearErrors();
+    editForm.name = user.name;
+    editForm.email = user.email;
+    editForm.role = user.role;
+    editForm.password = '';
+}
+function submitEdit() {
+    editForm.put(`/admin/users/${editing.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => { editing.value = null; },
+    });
+}
+
 function roleBadge(role) {
     const map = {
         admin:  'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300',
@@ -133,11 +151,13 @@ function avatar(user) {
                     <div class="text-sm text-gray-500 truncate">{{ u.email }}</div>
                 </div>
                 <div class="hidden sm:block text-xs text-gray-400 whitespace-nowrap">{{ u.created_at }}</div>
-                <select :value="u.role" @change="changeRole(u, $event.target.value)" :disabled="u.id === currentUserId"
-                    :class="['px-2 py-1 rounded text-xs font-medium border-0 focus:ring-2 focus:ring-red-500', roleBadge(u.role), u.id === currentUserId ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer']">
-                    <option v-for="r in roles" :key="r.value" :value="r.value">{{ r.label }}</option>
-                </select>
-                <button v-if="u.id !== currentUserId" @click="destroy(u)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded">
+                <span :class="['px-2 py-1 rounded text-xs font-medium', roleBadge(u.role)]">
+                    {{ (roles.find(r => r.value === u.role) || {}).label || u.role || '—' }}
+                </span>
+                <button @click="openEdit(u)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="Редактировать">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button v-if="u.id !== currentUserId" @click="destroy(u)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="Удалить">
                     <i class="fas fa-trash"></i>
                 </button>
             </li>
@@ -146,5 +166,67 @@ function avatar(user) {
                 <p>Пользователей не найдено</p>
             </li>
         </ul>
+    </div>
+
+    <!-- Edit modal -->
+    <div v-if="editing" class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" @click.self="editing = null">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+            <div class="flex items-start gap-3 mb-5">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-semibold flex-shrink-0">
+                    {{ avatar(editing) }}
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">Редактировать пользователя</h3>
+                    <p class="text-xs text-gray-500 font-mono mt-0.5">#{{ editing.id }} · {{ editing.email }}</p>
+                </div>
+            </div>
+
+            <form @submit.prevent="submitEdit" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Имя <span class="text-red-500">*</span></label>
+                    <input v-model="editForm.name" type="text" required
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm"
+                        :class="editForm.errors.name ? 'border-red-500' : ''">
+                    <p v-if="editForm.errors.name" class="text-xs text-red-500 mt-1">{{ editForm.errors.name }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span class="text-red-500">*</span></label>
+                    <input v-model="editForm.email" type="email" required
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm"
+                        :class="editForm.errors.email ? 'border-red-500' : ''">
+                    <p v-if="editForm.errors.email" class="text-xs text-red-500 mt-1">{{ editForm.errors.email }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Роль <span class="text-red-500">*</span></label>
+                    <select v-model="editForm.role" :disabled="editing.id === currentUserId"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm"
+                        :class="editing.id === currentUserId ? 'opacity-60 cursor-not-allowed' : ''">
+                        <option v-for="r in roles" :key="r.value" :value="r.value">{{ r.label }}</option>
+                    </select>
+                    <p v-if="editing.id === currentUserId" class="text-xs text-gray-500 mt-1">Нельзя изменить свою роль</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Новый пароль</label>
+                    <input v-model="editForm.password" type="password" minlength="8" placeholder="Оставь пустым чтобы не менять"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm"
+                        :class="editForm.errors.password ? 'border-red-500' : ''">
+                    <p v-if="editForm.errors.password" class="text-xs text-red-500 mt-1">{{ editForm.errors.password }}</p>
+                    <p class="text-xs text-gray-400 mt-1">Минимум 8 символов. Пустое поле — пароль не меняется.</p>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="editing = null" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm">
+                        Отмена
+                    </button>
+                    <button type="submit" :disabled="editForm.processing" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas" :class="editForm.processing ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                        <span>Сохранить</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </template>

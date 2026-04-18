@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.14.1] — 2026-04-18
+
+### Added
+- **User edit modal** on the Users page. Pencil button opens a dialog
+  with name / email / role / password fields. Consumer apps still
+  need to add a `PUT /admin/users/{user}` route pointing at their
+  UserController::update (package routes don't ship for this since the
+  User model is consumer-specific).
+
+
 ## [0.14.0] — 2026-04-18
 
 ### Added
