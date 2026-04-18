@@ -26,19 +26,27 @@ const typeSearch = ref('');
 const activeCategory = ref('__all__');
 const manualKey = ref(false); // по умолчанию block_key генерится сам
 
+// `data` and `settings` collide with Inertia's useForm() reserved API
+// (`form.data()` returns the payload). Use distinct local names and
+// transform to the backend-expected field names on submit.
 const form = useForm({
-    page_name:  props.item.page_name  ?? '',
-    block_key:  props.item.block_key  ?? '',
-    block_type: props.item.block_type ?? 'content',
-    sort_order: props.item.sort_order ?? 0,
-    is_active:  props.item.is_active  ?? true,
-    status:     props.item.status     ?? 'draft',
-    title:      { ...props.item.title },
-    subtitle:   { ...props.item.subtitle },
-    content:    { ...props.item.content },
-    data:       props.item.data     ?? '{}',
-    settings:   props.item.settings ?? '{}',
+    page_name:    props.item.page_name  ?? '',
+    block_key:    props.item.block_key  ?? '',
+    block_type:   props.item.block_type ?? 'content',
+    sort_order:   props.item.sort_order ?? 0,
+    is_active:    props.item.is_active  ?? true,
+    status:       props.item.status     ?? 'draft',
+    title:        { ...props.item.title },
+    subtitle:     { ...props.item.subtitle },
+    content:      { ...props.item.content },
+    blockData:    props.item.data     ?? '{}',
+    blockSettings:props.item.settings ?? '{}',
 });
+form.transform((d) => ({
+    ...d,
+    data:     d.blockData,
+    settings: d.blockSettings,
+}));
 
 const dataError = ref('');
 const settingsError = ref('');
@@ -57,8 +65,8 @@ function validateJson(v) {
     try { JSON.parse(v); return ''; } catch (e) { return 'Невалидный JSON: ' + e.message; }
 }
 function submit() {
-    dataError.value = validateJson(form.data);
-    settingsError.value = validateJson(form.settings);
+    dataError.value = validateJson(form.blockData);
+    settingsError.value = validateJson(form.blockSettings);
     if (dataError.value || settingsError.value) return;
     if (props.isEdit) form.put(`/admin/blocks/${props.item.id}`, { preserveScroll: true });
     else form.post('/admin/blocks');
@@ -199,12 +207,12 @@ function onPickerOpen() {
                     </div>
 
                     <!-- Visual schema-driven editor when the type has a schema. -->
-                    <BlockDataEditor v-if="currentSchema" :schema="currentSchema" v-model="form.data" />
+                    <BlockDataEditor v-if="currentSchema" :schema="currentSchema" v-model="form.blockData" />
 
                     <!-- Raw JSON fallback for types without a schema. -->
                     <template v-else>
                         <p class="text-xs text-gray-500">Структурные данные (слайды, ссылки, карточки) в формате JSON. Для типов с готовой схемой здесь отрисовывается визуальный редактор.</p>
-                        <textarea v-model="form.data" rows="18" spellcheck="false"
+                        <textarea v-model="form.blockData" rows="18" spellcheck="false"
                             class="w-full font-mono text-sm px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"
                             :class="dataError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'"></textarea>
                         <p v-if="dataError" class="text-sm text-red-500">{{ dataError }}</p>
@@ -214,7 +222,7 @@ function onPickerOpen() {
                 <div v-show="activeTab === 'settings'" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-2">
                     <h3 class="font-semibold text-gray-900 dark:text-white">Настройки отображения (JSON)</h3>
                     <p class="text-xs text-gray-500">Визуальные параметры: фон, цвет текста, CSS-классы.</p>
-                    <textarea v-model="form.settings" rows="12" spellcheck="false"
+                    <textarea v-model="form.blockSettings" rows="12" spellcheck="false"
                         class="w-full font-mono text-sm px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"
                         :class="settingsError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'"></textarea>
                     <p v-if="settingsError" class="text-sm text-red-500">{{ settingsError }}</p>
