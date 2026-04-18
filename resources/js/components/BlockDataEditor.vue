@@ -10,7 +10,7 @@
  * contract as the old textarea) so the surrounding form doesn't need
  * to change — it just emits on every field edit.
  */
-import { computed, ref, watch } from 'vue';
+import { reactive, watch } from 'vue';
 
 const props = defineProps({
     modelValue:    { type: String, default: '{}' },
@@ -19,10 +19,6 @@ const props = defineProps({
     fileUploadUrl: { type: String, default: '/admin/upload/file' },
 });
 const emit = defineEmits(['update:modelValue']);
-
-// Parse JSON into a reactive object; keep local state to avoid
-// round-tripping every keystroke through JSON.
-const data = ref(parse(props.modelValue));
 
 function parse(json) {
     try {
@@ -33,24 +29,31 @@ function parse(json) {
     }
 }
 
-// Emit JSON string up to the parent whenever the object changes.
-watch(data, (v) => {
-    emit('update:modelValue', JSON.stringify(v, null, 2));
+// `reactive()` (not `ref()`) so v-model="data[field.key]" picks up
+// dynamic keys correctly — nested property access on a ref-wrapped
+// object was rendering empty inputs for existing values.
+const data = reactive(parse(props.modelValue));
+
+// Emit JSON string up to the parent whenever any key changes.
+watch(data, () => {
+    emit('update:modelValue', JSON.stringify(data, null, 2));
 }, { deep: true });
 
-// If the parent resets the value externally (e.g. user switched block
-// type), re-parse.
+// Parent reset (e.g. user switched block type) → replace our state.
 watch(() => props.modelValue, (v) => {
-    const current = JSON.stringify(data.value);
-    const incoming = JSON.stringify(parse(v));
-    if (current !== incoming) data.value = parse(v);
+    const incoming = parse(v);
+    const current = JSON.stringify(data);
+    if (JSON.stringify(incoming) === current) return;
+    // Wipe + re-hydrate so reactivity catches all changes.
+    for (const k of Object.keys(data)) delete data[k];
+    Object.assign(data, incoming);
 });
 
 // ===== Array helpers =====
 
 function ensureArray(key) {
-    if (!Array.isArray(data.value[key])) data.value[key] = [];
-    return data.value[key];
+    if (!Array.isArray(data[key])) data[key] = [];
+    return data[key];
 }
 
 function addItem(field) {

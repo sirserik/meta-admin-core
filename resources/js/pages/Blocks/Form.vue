@@ -171,7 +171,7 @@ function onPickerOpen() {
 
     <form @submit.prevent="submit" class="space-y-6">
         <div class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700">
-            <button v-for="(t, val) in { content: 'Контент', data: 'Данные (JSON)', settings: 'Настройки (JSON)' }"
+            <button v-for="(t, val) in { content: 'Контент', data: 'Данные', settings: 'Настройки' }"
                 :key="val" type="button" @click="activeTab = val"
                 class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
                 :class="activeTab === val
