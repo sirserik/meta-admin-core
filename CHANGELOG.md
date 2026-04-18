@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.5] — 2026-04-18
+
+### Fixed
+- **Critical: resource-name resolution in ResourceController.** With the
+  per-resource route registration from v0.3.4, routes use
+  `->defaults('resource', $name)` together with a URL placeholder
+  `{id}`. Laravel's DI injects controller method args **positionally**,
+  so `edit(string $resource, string $id)` received `$resource='1'`
+  (the URL param) and `$id='pages'` (the default) — swapped. Every
+  `/admin/{name}/{id}/edit`, `/admin/{name}/{id}` (PUT/DELETE/PATCH)
+  returned 404 because `AdminCore::getResource('1')` is null.
+- All controller actions (index/create/edit/store/update/destroy/
+  togglePublish) now pull the resource name from
+  `$request->route()->parameter('resource')` via a new
+  `resolveResource()` helper. Works regardless of arg order.
+
+
 ## [0.3.4] — 2026-04-18
 
 ### Fixed

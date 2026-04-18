@@ -25,8 +25,9 @@ class ResourceController extends Controller
 {
     protected const LOCALES = ['ru', 'kk', 'en'];
 
-    public function index(Request $request, string $resource): Response
+    public function index(Request $request, string $resource = ''): Response
     {
+        $resource = $this->resolveResource($request, $resource);
         $config = $this->config($resource);
         $model = $config['model'];
 
@@ -53,8 +54,9 @@ class ResourceController extends Controller
         ]);
     }
 
-    public function create(string $resource): Response
+    public function create(Request $request, string $resource = ''): Response
     {
+        $resource = $this->resolveResource($request, $resource);
         $config = $this->config($resource);
 
         return Inertia::render($config['page'] . '/Form', [
@@ -69,8 +71,9 @@ class ResourceController extends Controller
         ]);
     }
 
-    public function edit(string $resource, string $id): Response
+    public function edit(Request $request, string $id): Response
     {
+        $resource = $this->resolveResource($request);
         $config = $this->config($resource);
         $m = $this->findModel($config, $id);
 
@@ -102,8 +105,9 @@ class ResourceController extends Controller
         }, $attributes);
     }
 
-    public function store(Request $request, string $resource): RedirectResponse
+    public function store(Request $request, string $resource = ''): RedirectResponse
     {
+        $resource = $this->resolveResource($request, $resource);
         $config = $this->config($resource);
         $data = $this->validated($request, $config);
 
@@ -117,8 +121,9 @@ class ResourceController extends Controller
             ->with('success', $config['label'] . ' создан(а)');
     }
 
-    public function update(Request $request, string $resource, string $id): RedirectResponse
+    public function update(Request $request, string $id): RedirectResponse
     {
+        $resource = $this->resolveResource($request);
         $config = $this->config($resource);
         $m = $this->findModel($config, $id);
         $data = $this->validated($request, $config, $m);
@@ -131,8 +136,9 @@ class ResourceController extends Controller
             ->with('success', 'Сохранено');
     }
 
-    public function destroy(string $resource, string $id): RedirectResponse
+    public function destroy(Request $request, string $id): RedirectResponse
     {
+        $resource = $this->resolveResource($request);
         $config = $this->config($resource);
         $m = $this->findModel($config, $id);
 
@@ -150,8 +156,9 @@ class ResourceController extends Controller
         return '/' . config('admin-core.prefix', 'admin') . '/' . $resource;
     }
 
-    public function togglePublish(string $resource, string $id): RedirectResponse
+    public function togglePublish(Request $request, string $id): RedirectResponse
     {
+        $resource = $this->resolveResource($request);
         $config = $this->config($resource);
         $m = $this->findModel($config, $id);
         $table = $m->getTable();
@@ -174,6 +181,28 @@ class ResourceController extends Controller
         $c = AdminCore::getResource($resource);
         abort_unless($c, 404, "Resource [{$resource}] not registered");
         return $c;
+    }
+
+    /**
+     * Resolve the resource name from the current route. We can't rely on
+     * Laravel's positional DI because routes registered from
+     * routes/admin.php use `->defaults('resource', $name)` plus a URL
+     * placeholder `{id}` — positional binding would swap them.
+     *
+     * Read directly from `$request->route()->parameter('resource')` (which
+     * covers both URL params and `->defaults()`). Fallback to the
+     * controller-arg value if it was provided.
+     */
+    protected function resolveResource(Request $request, string $fallback = ''): string
+    {
+        $route = $request->route();
+        if ($route) {
+            $name = $route->parameter('resource');
+            if (is_string($name) && $name !== '') {
+                return $name;
+            }
+        }
+        return $fallback;
     }
 
     protected function findModel(array $config, string $id): Model
