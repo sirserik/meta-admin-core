@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import PageHeader from '@admin-core/components/PageHeader.vue';
 import LocaleTabs from '@admin-core/components/LocaleTabs.vue';
 import TranslatableField from '@admin-core/components/TranslatableField.vue';
+import BlockDataEditor from '@admin-core/components/BlockDataEditor.vue';
 
 const props = defineProps({
     title: String,
@@ -11,6 +12,7 @@ const props = defineProps({
     pagesGrouped: Object,
     typesByCategory: Object,
     typesFlat: Array,
+    schemas: { type: Object, default: () => ({}) },
     statuses: Array,
     locales: Array,
     isEdit: Boolean,
@@ -45,6 +47,10 @@ const currentTypeInfo = computed(() =>
     props.typesFlat.find(t => t.key === form.block_type)
     || { key: form.block_type, label: form.block_type, description: '', icon: 'fa-puzzle-piece' }
 );
+
+// Current block type's data schema (from BlockCatalog). When present,
+// Данные tab shows the visual editor; otherwise falls back to JSON.
+const currentSchema = computed(() => props.schemas[form.block_type] ?? null);
 
 function validateJson(v) {
     if (!v || !v.trim()) return '';
@@ -157,10 +163,6 @@ function onPickerOpen() {
             <Link href="/admin/blocks" class="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm">
                 <i class="fas fa-arrow-left"></i><span>К списку</span>
             </Link>
-            <a v-if="isEdit" :href="`/admin/blocks/${item.id}/edit-legacy`"
-                class="inline-flex items-center gap-2 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 px-4 py-2 rounded-lg text-sm" title="Для сложных блоков (hero-slides, gallery, FAQ)">
-                <i class="fas fa-tools"></i><span>Старый редактор</span>
-            </a>
             <button v-if="isEdit" @click="destroy" class="inline-flex items-center gap-2 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-100 px-4 py-2 rounded-lg text-sm">
                 <i class="fas fa-trash"></i><span>Удалить</span>
             </button>
@@ -190,16 +192,23 @@ function onPickerOpen() {
                     </div>
                 </div>
 
-                <div v-show="activeTab === 'data'" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-2">
+                <div v-show="activeTab === 'data'" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-3">
                     <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900 dark:text-white">Данные блока (JSON)</h3>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Данные блока</h3>
                         <span class="text-xs text-gray-400">{{ currentTypeInfo.label }}</span>
                     </div>
-                    <p class="text-xs text-gray-500">Структурные данные (слайды, ссылки, карточки). Для визуального UI нажми «Старый редактор».</p>
-                    <textarea v-model="form.data" rows="18" spellcheck="false"
-                        class="w-full font-mono text-sm px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"
-                        :class="dataError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'"></textarea>
-                    <p v-if="dataError" class="text-sm text-red-500">{{ dataError }}</p>
+
+                    <!-- Visual schema-driven editor when the type has a schema. -->
+                    <BlockDataEditor v-if="currentSchema" :schema="currentSchema" v-model="form.data" />
+
+                    <!-- Raw JSON fallback for types without a schema. -->
+                    <template v-else>
+                        <p class="text-xs text-gray-500">Структурные данные (слайды, ссылки, карточки) в формате JSON. Для типов с готовой схемой здесь отрисовывается визуальный редактор.</p>
+                        <textarea v-model="form.data" rows="18" spellcheck="false"
+                            class="w-full font-mono text-sm px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"
+                            :class="dataError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'"></textarea>
+                        <p v-if="dataError" class="text-sm text-red-500">{{ dataError }}</p>
+                    </template>
                 </div>
 
                 <div v-show="activeTab === 'settings'" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-2">

@@ -230,4 +230,207 @@ class DefaultBlockCatalog implements BlockCatalog
         }
         return array_merge(static::BLOCK_TYPES[$key], ['key' => $key]);
     }
+
+    /**
+     * Visual schemas for the common block types. When a schema exists,
+     * the admin renders a proper form (array-of-records editor) instead
+     * of a raw JSON textarea. Everything else falls back to JSON.
+     */
+    public const SCHEMAS = [
+        'hero' => [
+            'items' => [
+                ['key' => 'image',     'label' => 'Фоновое изображение', 'type' => 'image'],
+                ['key' => 'cta_label', 'label' => 'Текст кнопки',         'type' => 'text'],
+                ['key' => 'cta_url',   'label' => 'Ссылка кнопки',        'type' => 'url'],
+            ],
+        ],
+        'hero-slides' => [
+            'items' => [
+                [
+                    'key'   => 'slides',
+                    'label' => 'Слайды',
+                    'type'  => 'array',
+                    'item_fields' => [
+                        ['key' => 'title',     'label' => 'Заголовок',    'type' => 'text'],
+                        ['key' => 'subtitle',  'label' => 'Подзаголовок', 'type' => 'textarea'],
+                        ['key' => 'image',     'label' => 'Картинка',     'type' => 'image'],
+                        ['key' => 'cta_label', 'label' => 'Текст кнопки', 'type' => 'text'],
+                        ['key' => 'cta_url',   'label' => 'Ссылка',       'type' => 'url'],
+                    ],
+                ],
+            ],
+        ],
+        'stats' => [
+            'items' => [
+                [
+                    'key' => 'items', 'label' => 'Числа', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'value', 'label' => 'Значение', 'type' => 'text'],
+                        ['key' => 'label', 'label' => 'Подпись',  'type' => 'text'],
+                        ['key' => 'icon',  'label' => 'Иконка',   'type' => 'text'],
+                    ],
+                ],
+            ],
+        ],
+        'features' => [
+            'items' => [
+                [
+                    'key' => 'items', 'label' => 'Преимущества', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'icon',        'label' => 'Иконка (FA)', 'type' => 'text'],
+                        ['key' => 'title',       'label' => 'Заголовок',   'type' => 'text'],
+                        ['key' => 'description', 'label' => 'Описание',    'type' => 'textarea'],
+                    ],
+                ],
+            ],
+        ],
+        'info-cards' => [
+            'items' => [
+                [
+                    'key' => 'cards', 'label' => 'Карточки', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'icon',        'label' => 'Иконка',    'type' => 'text'],
+                        ['key' => 'title',       'label' => 'Заголовок', 'type' => 'text'],
+                        ['key' => 'description', 'label' => 'Описание',  'type' => 'textarea'],
+                        ['key' => 'url',         'label' => 'Ссылка',    'type' => 'url'],
+                    ],
+                ],
+            ],
+        ],
+        'grid-cards' => [
+            'items' => [
+                [
+                    'key' => 'cards', 'label' => 'Карточки', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'icon',        'label' => 'Иконка',    'type' => 'text'],
+                        ['key' => 'title',       'label' => 'Заголовок', 'type' => 'text'],
+                        ['key' => 'description', 'label' => 'Описание',  'type' => 'textarea'],
+                        ['key' => 'url',         'label' => 'Ссылка',    'type' => 'url'],
+                    ],
+                ],
+            ],
+        ],
+        'faq' => [
+            'items' => [
+                [
+                    'key' => 'items', 'label' => 'Вопросы', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'question', 'label' => 'Вопрос', 'type' => 'text'],
+                        ['key' => 'answer',   'label' => 'Ответ',  'type' => 'textarea'],
+                    ],
+                ],
+            ],
+        ],
+        'gallery' => [
+            'items' => [
+                [
+                    'key' => 'images', 'label' => 'Изображения', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'image',   'label' => 'Файл',    'type' => 'image'],
+                        ['key' => 'caption', 'label' => 'Подпись', 'type' => 'text'],
+                    ],
+                ],
+            ],
+        ],
+        'photo-grid' => [
+            'items' => [
+                [
+                    'key' => 'images', 'label' => 'Фотографии', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'image', 'label' => 'Файл', 'type' => 'image'],
+                    ],
+                ],
+            ],
+        ],
+        'timeline' => [
+            'items' => [
+                [
+                    'key' => 'events', 'label' => 'События', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'date',        'label' => 'Дата',     'type' => 'text'],
+                        ['key' => 'title',       'label' => 'Заголовок','type' => 'text'],
+                        ['key' => 'description', 'label' => 'Описание', 'type' => 'textarea'],
+                    ],
+                ],
+            ],
+        ],
+        'team' => [
+            'items' => [
+                [
+                    'key' => 'members', 'label' => 'Команда', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'photo',    'label' => 'Фото',      'type' => 'image'],
+                        ['key' => 'name',     'label' => 'Имя',       'type' => 'text'],
+                        ['key' => 'position', 'label' => 'Должность', 'type' => 'text'],
+                        ['key' => 'bio',      'label' => 'О нём',     'type' => 'textarea'],
+                    ],
+                ],
+            ],
+        ],
+        'partners-section' => [
+            'items' => [
+                [
+                    'key' => 'partners', 'label' => 'Партнёры', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'logo', 'label' => 'Логотип', 'type' => 'image'],
+                        ['key' => 'name', 'label' => 'Название','type' => 'text'],
+                        ['key' => 'url',  'label' => 'Ссылка',  'type' => 'url'],
+                    ],
+                ],
+            ],
+        ],
+        'quick-links' => [
+            'items' => [
+                [
+                    'key' => 'links', 'label' => 'Ссылки', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'icon',  'label' => 'Иконка',     'type' => 'text'],
+                        ['key' => 'label', 'label' => 'Название',   'type' => 'text'],
+                        ['key' => 'url',   'label' => 'URL',        'type' => 'url'],
+                    ],
+                ],
+            ],
+        ],
+        'links' => [
+            'items' => [
+                [
+                    'key' => 'items', 'label' => 'Документы / ссылки', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'label', 'label' => 'Название',  'type' => 'text'],
+                        ['key' => 'url',   'label' => 'URL / файл','type' => 'url'],
+                    ],
+                ],
+            ],
+        ],
+        'social-links' => [
+            'items' => [
+                [
+                    'key' => 'networks', 'label' => 'Сети', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'icon', 'label' => 'Иконка (FA)',     'type' => 'text'],
+                        ['key' => 'url',  'label' => 'URL профиля',     'type' => 'url'],
+                    ],
+                ],
+            ],
+        ],
+        'cta' => [
+            'items' => [
+                ['key' => 'cta_label', 'label' => 'Текст кнопки', 'type' => 'text'],
+                ['key' => 'cta_url',   'label' => 'Ссылка',        'type' => 'url'],
+                ['key' => 'background','label' => 'Фоновое изображение', 'type' => 'image'],
+            ],
+        ],
+        'image' => [
+            'items' => [
+                ['key' => 'image', 'label' => 'Изображение', 'type' => 'image'],
+                ['key' => 'url',   'label' => 'Ссылка',      'type' => 'url'],
+                ['key' => 'alt',   'label' => 'Alt-текст',   'type' => 'text'],
+            ],
+        ],
+    ];
+
+    public function blockSchema(string $key): ?array
+    {
+        return static::SCHEMAS[$key] ?? null;
+    }
 }

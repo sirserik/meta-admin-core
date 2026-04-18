@@ -44,6 +44,32 @@ interface BlockCatalog
     /**
      * Metadata for a specific block type, or null/empty on miss.
      * Shape: ['key' => ..., 'label' => ..., 'icon' => ..., 'description' => ...].
+     * May also include a `data_schema` key (see blockSchema()).
      */
     public function blockType(string $key): array;
+
+    /**
+     * Schema describing the shape of a block's `data` field.
+     *
+     * Used by the visual editor to render form inputs instead of raw
+     * JSON. Return null when no schema exists — the UI will fall back
+     * to a JSON textarea.
+     *
+     * Return shape:
+     *   [
+     *     'items' => [
+     *       [
+     *         'key'   => 'slides',          // JSON array key
+     *         'label' => 'Слайды',
+     *         'type'  => 'array',           // 'array' | 'text' | 'textarea' | 'image' | 'url'
+     *         'item_fields' => [            // when type === 'array'
+     *           ['key' => 'title',     'label' => 'Заголовок', 'type' => 'text'],
+     *           ['key' => 'image',     'label' => 'Картинка',  'type' => 'image'],
+     *           ['key' => 'cta_url',   'label' => 'Ссылка',    'type' => 'url'],
+     *         ],
+     *       ],
+     *     ],
+     *   ]
+     */
+    public function blockSchema(string $key): ?array;
 }

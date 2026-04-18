@@ -78,6 +78,7 @@ class PageBlockController extends Controller
             'pagesGrouped'       => $this->catalog->pagesGrouped(),
             'typesByCategory'    => $this->catalog->blockTypesGrouped(),
             'typesFlat'          => $this->blockTypesIndex(),
+            'schemas'            => $this->schemasMap(),
             'statuses'           => $this->statusOptions(),
             'locales'            => self::LOCALES,
             'isEdit'             => false,
@@ -94,6 +95,7 @@ class PageBlockController extends Controller
             'pagesGrouped'       => $this->catalog->pagesGrouped(),
             'typesByCategory'    => $this->catalog->blockTypesGrouped(),
             'typesFlat'          => $this->blockTypesIndex(),
+            'schemas'            => $this->schemasMap(),
             'statuses'           => $this->statusOptions(),
             'locales'            => self::LOCALES,
             'isEdit'             => true,
@@ -216,6 +218,21 @@ class PageBlockController extends Controller
             $known[$slug] ??= ['slug' => $slug, 'label' => $slug];
         }
         return array_values($known);
+    }
+
+    /**
+     * Map of block_type → data schema. Passed to the Vue form so it
+     * can render visual editors for known types and fall back to a
+     * raw JSON textarea for the rest.
+     */
+    protected function schemasMap(): array
+    {
+        $out = [];
+        foreach ($this->catalog->blockTypesFlat() as $type) {
+            $schema = $this->catalog->blockSchema($type['key']);
+            if ($schema) $out[$type['key']] = $schema;
+        }
+        return $out;
     }
 
     protected function blockTypesIndex(): array
