@@ -308,6 +308,7 @@ class ResourceController extends Controller
             'date'      => "{$base}|date",
             'datetime-local' => "{$base}|date",
             'boolean'   => "nullable|boolean",
+            'icon'      => "{$base}|string|max:100",
             'select'    => isset($a['options']) && $a['options']
                 ? "{$base}|in:" . implode(',', array_column(is_callable($a['options']) ? call_user_func($a['options']) : $a['options'], 'value'))
                 : "{$base}|string",

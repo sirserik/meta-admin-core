@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-04-18
+
+### Added
+- **IconPicker component + `icon` attribute type.** New standard way to
+  pick FontAwesome icons in the admin, so every site doesn't roll its
+  own plain text input:
+  ```php
+  ['name' => 'icon', 'type' => 'icon', 'label' => 'Иконка']
+  ```
+  Renders an input with live preview + a "Выбрать" button that opens
+  a searchable modal with ~200 curated FA icons grouped by category
+  (Общее / Навигация / Контент / Образование / Бизнес / …). Users can
+  also type any FA class name manually.
+- Exported as `@admin-core/components/IconPicker.vue` for site-specific
+  Vue pages that need an icon picker outside the generic Resource form
+  (e.g. Menu, Settings).
+
+
 ## [0.4.1] — 2026-04-18
 
 ### Added
