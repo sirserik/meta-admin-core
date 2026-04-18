@@ -30,6 +30,18 @@ class AdminCoreServiceProvider extends ServiceProvider
         //     specific consumer routes.
         $this->app->booted(function () {
             $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
+
+            // Ship the "Updates" menu item from the package — every consumer
+            // gets it without adding a line to their AppServiceProvider.
+            if ($this->app->bound(AdminCore::class)) {
+                $this->app->make(AdminCore::class)->menuItem(
+                    'Обновления',
+                    '/' . config('admin-core.prefix', 'admin') . '/updates',
+                    'fa-cloud-arrow-down',
+                    'Система',
+                    99
+                );
+            }
         });
 
         // Blade root view namespace

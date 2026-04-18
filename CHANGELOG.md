@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-04-18
+
+### Added
+- **In-admin updater.** New `/admin/updates` page in every consumer site
+  (menu item auto-registers from the package). Shows installed vs
+  latest version, fetches changelog from GitHub, and has a one-click
+  "Update" button that runs composer/artisan/npm server-side.
+- `Meta\AdminCore\Services\UpdateChecker` — polls `api.github.com/repos/
+  sirserik/meta-admin-core/releases/latest`, caches for 1h.
+- `UpdateController::run()` — runs:
+  1. `composer update meta/admin-core -W --no-interaction`
+  2. `php artisan migrate --force`
+  3. `config:clear / route:clear / view:clear / cache:clear`
+  4. `npm run build` (if npm is available locally)
+  Writes a full log to `storage/logs/admin-core-update-{Y-m-d}.log` and
+  shows the last log on the page.
+- Environment probe on the page — shows whether composer/npm/shell_exec
+  are actually available, so admin knows before clicking Update.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+
 ## [0.7.0] — 2026-04-18
 
 ### Added

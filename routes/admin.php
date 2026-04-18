@@ -36,6 +36,11 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     // pointed here before the headless migration; keep backwards compat.
     Route::redirect('/dashboard', '/' . $prefix, 302);
 
+    // System updates (package-level updater)
+    Route::get(   '/updates',       [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'index'])->name('updates.index');
+    Route::post(  '/updates/check', [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'check'])->name('updates.check');
+    Route::post(  '/updates/run',   [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'run'])->name('updates.run');
+
     // Register narrow routes per registered resource. This iterates
     // AdminCore's registry at boot time.
     foreach (AdminCore::getResources()->keys() as $name) {
