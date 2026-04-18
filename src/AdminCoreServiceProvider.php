@@ -86,6 +86,27 @@ class AdminCoreServiceProvider extends ServiceProvider
 
                 // Ship "Обновления" + "Фичи" menu items for every consumer.
                 $prefix = config('admin-core.prefix', 'admin');
+                // «Страницы сайта» — quick links to /admin/blocks?page=<slug>
+                // for every page declared in the BlockCatalog. One flat
+                // section, items ordered by catalog groups so related
+                // pages cluster together.
+                if ($this->app->bound(\Meta\AdminCore\Contracts\BlockCatalog::class)) {
+                    $catalog = $this->app->make(\Meta\AdminCore\Contracts\BlockCatalog::class);
+                    $order = 0;
+                    foreach ($catalog->pagesGrouped() as $groupLabel => $pages) {
+                        foreach ($pages as $slug => $label) {
+                            $core->menuItem(
+                                $label,
+                                "/{$prefix}/blocks?page={$slug}",
+                                'fa-file-lines',
+                                'Страницы сайта',
+                                80 + $order,
+                            );
+                            $order++;
+                        }
+                    }
+                }
+
                 $core->menuItem('Заявки',     "/{$prefix}/leads",         'fa-inbox',            'Система', 90);
                 $core->menuItem('Активность', "/{$prefix}/activity",      'fa-clock-rotate-left','Система', 91);
                 $core->menuItem('Бэкапы',     "/{$prefix}/backup",        'fa-box-archive',      'Система', 92);

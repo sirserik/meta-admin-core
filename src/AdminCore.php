@@ -115,7 +115,7 @@ class AdminCore
         return $this;
     }
 
-    public function menuItem(string $label, string $href, string $icon = 'fa-circle', string $menu = 'Другое', int $order = 100): self
+    public function menuItem(string $label, string $href, string $icon = 'fa-circle', string $menu = 'Другое', int $order = 100, array $children = []): self
     {
         // Dedupe by href — FIRST writer wins. Package defaults register
         // later (in $app->booted()) so consumer-specific menuItem() calls
@@ -126,7 +126,36 @@ class AdminCore
             if ($existing['href'] === $href) return $this;
         }
         $feature = $this->currentFeature;
-        $this->menuItems[] = compact('label', 'href', 'icon', 'menu', 'order', 'feature');
+        $this->menuItems[] = compact('label', 'href', 'icon', 'menu', 'order', 'feature', 'children');
+        return $this;
+    }
+
+    /**
+     * Register a whole sidebar group (section) in one call — useful when
+     * you want a nested "Страницы сайта" / "Соцпортал" / etc. area that
+     * doesn't map to a single top-level link.
+     *
+     * `$items` shape: `[['label' => 'История', 'href' => '/admin/...', 'icon' => 'fa-...']]`.
+     */
+    public function menuGroup(string $section, array $items, int $order = 100): self
+    {
+        $feature = $this->currentFeature;
+        foreach ($items as $i => $it) {
+            $href = $it['href'] ?? '#';
+            // Dedupe as usual.
+            foreach ($this->menuItems as $existing) {
+                if ($existing['href'] === $href) continue 2;
+            }
+            $this->menuItems[] = [
+                'label'   => $it['label'] ?? $href,
+                'href'    => $href,
+                'icon'    => $it['icon'] ?? 'fa-circle',
+                'menu'    => $section,
+                'order'   => $order + $i,
+                'feature' => $feature,
+                'children'=> [],
+            ];
+        }
         return $this;
     }
 
@@ -341,6 +370,7 @@ class AdminCore
         $sectionOrder = [
             'Главное'        => 10,
             'Контент'        => 20,
+            'Страницы сайта' => 25,
             'Образование'    => 30,
             'Обращения'      => 40,
             'Библиотека'     => 50,
