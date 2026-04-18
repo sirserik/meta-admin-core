@@ -1,45 +1,60 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Meta\AdminCore\Facades\AdminCore;
 use Meta\AdminCore\Http\Controllers\DashboardController;
 use Meta\AdminCore\Http\Controllers\ResourceController;
 
 /**
- * Admin Core routes — auto-loaded by AdminCoreServiceProvider.
+ * Admin Core routes — auto-loaded by AdminCoreServiceProvider::booted().
  *
  * Mounted under /admin by default (configurable via config('admin-core.prefix')).
  * All concrete resources are dispatched through ResourceController which reads
  * from AdminCore::getResource($name).
+ *
+ * Instead of a catch-all /admin/{resource} — which would eat any specific
+ * consumer route like /admin/activity, /admin/leads — we enumerate every
+ * registered resource and register narrow routes per-resource. This way
+ * consumer-specific routes (registered from routes/web.php after the
+ * package boot fires) always take priority when the path matches them
+ * exactly, and the package still handles every AdminCore::resource()-ed
+ * name without the consumer lifting a finger.
  */
 $prefix = config('admin-core.prefix', 'admin');
 $middleware = config('admin-core.middleware', ['auth', 'verified']);
 
-// Always prepend the `web` middleware group — it's what ships sessions,
-// CSRF, cookies and route-model binding. Without it, auth() can't pull
-// the user from the session (cookies never get decrypted, StartSession
-// never runs) and every protected route 302s to /login.
-//
-// `array_unique` keeps it idempotent if the consumer already included
-// 'web' in their admin-core.middleware config.
+// Always prepend the `web` middleware group — it ships sessions, CSRF,
+// cookies and route-model binding. Without it auth() can't pull the user
+// from the session and every protected route 302s to /login in a loop.
 $middleware = array_values(array_unique(array_merge(['web'], (array) $middleware)));
 
 Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function () use ($prefix) {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('spa.dashboard');
 
-    // Legacy alias: /admin/dashboard → /admin
-    // Some consumer apps (and old tests) still point to /admin/dashboard from
-    // pre-headless days. Without this redirect the catch-all below treats
-    // "dashboard" as a resource name and 404s. Keep it defensive.
+    // Legacy alias: /admin/dashboard → /admin (302). Old Blade-admin code
+    // pointed here before the headless migration; keep backwards compat.
     Route::redirect('/dashboard', '/' . $prefix, 302);
 
-    // Generic resource CRUD — {resource} is the name registered via AdminCore::resource()
-    Route::get(   '/{resource}',                 [ResourceController::class, 'index'])  ->name('resource.index');
-    Route::get(   '/{resource}/create',          [ResourceController::class, 'create']) ->name('resource.create');
-    Route::post(  '/{resource}',                 [ResourceController::class, 'store'])  ->name('resource.store');
-    Route::get(   '/{resource}/{id}/edit',       [ResourceController::class, 'edit'])   ->name('resource.edit');
-    Route::put(   '/{resource}/{id}',            [ResourceController::class, 'update']) ->name('resource.update');
-    Route::patch( '/{resource}/{id}',            [ResourceController::class, 'update']);
-    Route::delete('/{resource}/{id}',            [ResourceController::class, 'destroy'])->name('resource.destroy');
-    Route::patch( '/{resource}/{id}/toggle-publish', [ResourceController::class, 'togglePublish'])->name('resource.toggle-publish');
+    // Register narrow routes per registered resource. This iterates
+    // AdminCore's registry at boot time.
+    foreach (AdminCore::getResources()->keys() as $name) {
+        // Use `where('resource', $name)` so the route only matches this exact name.
+        Route::get(   "/{$name}",                 [ResourceController::class, 'index'])
+            ->defaults('resource', $name)->name("{$name}.index");
+        Route::get(   "/{$name}/create",          [ResourceController::class, 'create'])
+            ->defaults('resource', $name)->name("{$name}.create");
+        Route::post(  "/{$name}",                 [ResourceController::class, 'store'])
+            ->defaults('resource', $name)->name("{$name}.store");
+        Route::get(   "/{$name}/{id}/edit",       [ResourceController::class, 'edit'])
+            ->defaults('resource', $name)->name("{$name}.edit");
+        Route::put(   "/{$name}/{id}",            [ResourceController::class, 'update'])
+            ->defaults('resource', $name)->name("{$name}.update");
+        Route::patch( "/{$name}/{id}",            [ResourceController::class, 'update'])
+            ->defaults('resource', $name);
+        Route::delete("/{$name}/{id}",            [ResourceController::class, 'destroy'])
+            ->defaults('resource', $name)->name("{$name}.destroy");
+        Route::patch( "/{$name}/{id}/toggle-publish", [ResourceController::class, 'togglePublish'])
+            ->defaults('resource', $name)->name("{$name}.toggle-publish");
+    }
 });

@@ -113,8 +113,7 @@ class ResourceController extends Controller
         $m->save();
         $this->saveTranslations($m, $data, $config);
 
-        return redirect()
-            ->route('admin.resource.index', $resource)
+        return redirect($this->resourceIndexUrl($resource))
             ->with('success', $config['label'] . ' создан(а)');
     }
 
@@ -128,8 +127,7 @@ class ResourceController extends Controller
         $m->save();
         $this->saveTranslations($m, $data, $config);
 
-        return redirect()
-            ->route('admin.resource.index', $resource)
+        return redirect($this->resourceIndexUrl($resource))
             ->with('success', 'Сохранено');
     }
 
@@ -143,9 +141,13 @@ class ResourceController extends Controller
         }
         $m->delete();
 
-        return redirect()
-            ->route('admin.resource.index', $resource)
+        return redirect($this->resourceIndexUrl($resource))
             ->with('success', 'Удалено');
+    }
+
+    protected function resourceIndexUrl(string $resource): string
+    {
+        return '/' . config('admin-core.prefix', 'admin') . '/' . $resource;
     }
 
     public function togglePublish(string $resource, string $id): RedirectResponse
@@ -320,9 +322,10 @@ class ResourceController extends Controller
 
     protected function presentRow(Model $m, array $config): array
     {
+        $prefix = config('admin-core.prefix', 'admin');
         $row = [
             'id'  => $m->id,
-            'url' => route('admin.resource.edit', [$config['name'], $m->getRouteKey()]),
+            'url' => url("/{$prefix}/{$config['name']}/{$m->getRouteKey()}/edit"),
         ];
         // Title/name
         foreach (['title', 'name'] as $f) {

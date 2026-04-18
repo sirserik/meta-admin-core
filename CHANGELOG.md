@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.4] — 2026-04-18
+
+### Fixed
+- **Critical: per-resource routes instead of catch-all `{resource}`.**
+  The generic `GET /admin/{resource}` catch-all was eating every
+  consumer-specific path (e.g. `/admin/activity`, `/admin/leads`) —
+  the router matches patterns in registration order, so the wildcard
+  won. Now `routes/admin.php` enumerates `AdminCore::getResources()`
+  and registers narrow routes per resource name. Consumer-specific
+  routes registered in `routes/web.php` win over package ones.
+- **Load routes after `$app->booted()`.** Required because consumer
+  `AppServiceProvider::boot()` is where resources get registered via
+  `AdminCore::resource()`. Loading the package routes during the normal
+  boot phase meant the registry was empty when we iterated it.
+- **Removed `admin.resource.*` named routes.** They were lost with the
+  per-resource registration. `ResourceController` now uses `url()`
+  with the configured prefix for redirects; `admin_core_route()` helper
+  was rewritten to compute URLs directly without named-route lookup.
+
+
 ## [0.3.3] — 2026-04-18
 
 ### Fixed

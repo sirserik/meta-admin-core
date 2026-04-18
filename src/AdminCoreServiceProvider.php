@@ -21,8 +21,16 @@ class AdminCoreServiceProvider extends ServiceProvider
         // Inertia middleware — consumer apps must include it themselves.
         // Published so they can customise it.
 
-        // Routes
-        $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
+        // Routes — register AFTER all providers have booted so:
+        //  1) AdminCore::resource() calls from the consumer's AppServiceProvider
+        //     are already in the registry when we enumerate them;
+        //  2) consumer-specific admin routes from routes/web.php (like
+        //     /admin/activity, /admin/leads) are already registered, so
+        //     when we add our per-resource routes last, they don't shadow
+        //     specific consumer routes.
+        $this->app->booted(function () {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
+        });
 
         // Blade root view namespace
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'admin-core');
