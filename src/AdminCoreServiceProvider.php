@@ -71,7 +71,10 @@ class AdminCoreServiceProvider extends ServiceProvider
                     $module = new $class;
                     $core->registerFeature($module);
                     if ($module->available() && $core->enabled($module->name())) {
-                        $module->register($core);
+                        // Tag every resource / menuItem added inside with
+                        // the feature name so the sidebar can paint them
+                        // distinctly.
+                        $core->withFeature($module->name(), fn ($c) => $module->register($c));
                     }
                 }
             }

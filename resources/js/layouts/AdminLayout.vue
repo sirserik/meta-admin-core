@@ -11,6 +11,30 @@ const paletteRef = ref(null);
 
 const nav = computed(() => page.props.navigation ?? []);
 const brand = computed(() => page.props.brand ?? { name: 'Admin', color: '#C41E3A', logo_char: 'A' });
+
+// Stable color per feature name so each module gets a consistent hue
+// across the sidebar. FNV-like hash into a fixed palette.
+const FEATURE_PALETTE = [
+    { hex: '#16a34a', bg: '#16a34a15', text: '#15803d' }, // green (GDC / leaf)
+    { hex: '#0891b2', bg: '#0891b215', text: '#0e7490' }, // cyan (SDG / earth)
+    { hex: '#9333ea', bg: '#9333ea15', text: '#7e22ce' }, // purple
+    { hex: '#ea580c', bg: '#ea580c15', text: '#c2410c' }, // orange
+    { hex: '#2563eb', bg: '#2563eb15', text: '#1d4ed8' }, // blue
+    { hex: '#ca8a04', bg: '#ca8a0415', text: '#a16207' }, // gold
+    { hex: '#db2777', bg: '#db277715', text: '#be185d' }, // pink
+];
+const KNOWN_FEATURE_COLORS = {
+    green_deal: FEATURE_PALETTE[0],
+    sdg:        FEATURE_PALETTE[1],
+};
+function featureColor(feature) {
+    if (!feature) return null;
+    if (KNOWN_FEATURE_COLORS[feature]) return KNOWN_FEATURE_COLORS[feature];
+    // Hash unknown feature names to a palette slot
+    let h = 0;
+    for (let i = 0; i < feature.length; i++) h = (h * 31 + feature.charCodeAt(i)) | 0;
+    return FEATURE_PALETTE[Math.abs(h) % FEATURE_PALETTE.length];
+}
 const user = computed(() => page.props.auth?.user);
 const currentUrl = computed(() => page.url);
 
@@ -83,15 +107,26 @@ function openPalette() {
                             <Link
                                 :href="item.href"
                                 :title="sidebarCollapsed ? item.label : ''"
-                                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
+                                class="relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
                                 :class="[
                                     isActive(item.href)
                                         ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium'
-                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50',
+                                        : item.feature
+                                            ? 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50',
                                     sidebarCollapsed ? 'justify-center' : '',
                                 ]"
+                                :style="item.feature && !isActive(item.href) ? {
+                                    backgroundColor: featureColor(item.feature).bg,
+                                    color: featureColor(item.feature).text,
+                                } : null"
                             >
-                                <i :class="item.icon" class="w-4 text-center flex-shrink-0"></i>
+                                <!-- Left color bar for feature items -->
+                                <span v-if="item.feature && !sidebarCollapsed"
+                                    class="absolute left-0 top-1 bottom-1 w-1 rounded-full"
+                                    :style="{ backgroundColor: featureColor(item.feature).hex }"></span>
+                                <i :class="item.icon" class="w-4 text-center flex-shrink-0"
+                                   :style="item.feature && !isActive(item.href) ? { color: featureColor(item.feature).hex } : null"></i>
                                 <span v-if="!sidebarCollapsed" class="truncate">{{ item.label }}</span>
                             </Link>
                         </li>

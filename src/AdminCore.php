@@ -44,6 +44,22 @@ class AdminCore
     /** @var array<int, array<string, mixed>> — "quick action" buttons on dashboard */
     protected array $dashboardQuickActions = [];
 
+    /** Name of the feature whose register() is currently executing, if any.
+     * Items added while this is set get tagged so the sidebar can style
+     * them distinctly. */
+    protected ?string $currentFeature = null;
+
+    /**
+     * Run a callback in the context of a feature module. All resources /
+     * menu items added inside get the `feature => <name>` tag.
+     */
+    public function withFeature(string $name, \Closure $cb): void
+    {
+        $prev = $this->currentFeature;
+        $this->currentFeature = $name;
+        try { $cb($this); } finally { $this->currentFeature = $prev; }
+    }
+
     public function resource(string $name, array $config): self
     {
         $config['name']          = $name;
@@ -91,6 +107,9 @@ class AdminCore
         $config['route_key']     = $config['route_key']     ?? null; // null = use model default
         $config['per_page']      = $config['per_page']      ?? 15;
         $config['order_by']      = $config['order_by']      ?? ['created_at' => 'desc'];
+        // Tag with the feature currently registering, if any. Lets the
+        // sidebar paint feature-provided entries with a distinct color.
+        $config['feature']       = $config['feature']       ?? $this->currentFeature;
 
         $this->resources[$name] = $config;
         return $this;
@@ -106,7 +125,8 @@ class AdminCore
         foreach ($this->menuItems as $existing) {
             if ($existing['href'] === $href) return $this;
         }
-        $this->menuItems[] = compact('label', 'href', 'icon', 'menu', 'order');
+        $feature = $this->currentFeature;
+        $this->menuItems[] = compact('label', 'href', 'icon', 'menu', 'order', 'feature');
         return $this;
     }
 
@@ -283,20 +303,22 @@ class AdminCore
         $items = [];
         foreach ($this->resources as $name => $r) {
             $items[] = [
-                'label' => $r['label'],
-                'href'  => '/admin/' . $r['route'],
-                'icon'  => 'fas ' . $r['icon'],
-                'menu'  => $r['menu'],
-                'order' => $r['order'] ?? 50,
+                'label'   => $r['label'],
+                'href'    => '/admin/' . $r['route'],
+                'icon'    => 'fas ' . $r['icon'],
+                'menu'    => $r['menu'],
+                'order'   => $r['order'] ?? 50,
+                'feature' => $r['feature'] ?? null,
             ];
         }
         foreach ($this->menuItems as $m) {
             $items[] = [
-                'label' => $m['label'],
-                'href'  => $m['href'],
-                'icon'  => str_starts_with($m['icon'], 'fas ') ? $m['icon'] : 'fas ' . $m['icon'],
-                'menu'  => $m['menu'],
-                'order' => $m['order'],
+                'label'   => $m['label'],
+                'href'    => $m['href'],
+                'icon'    => str_starts_with($m['icon'], 'fas ') ? $m['icon'] : 'fas ' . $m['icon'],
+                'menu'    => $m['menu'],
+                'order'   => $m['order'],
+                'feature' => $m['feature'] ?? null,
             ];
         }
 
@@ -305,7 +327,12 @@ class AdminCore
         $grouped = [];
         foreach ($items as $i) {
             $grouped[$i['menu']] ??= [];
-            $grouped[$i['menu']][] = ['label' => $i['label'], 'href' => $i['href'], 'icon' => $i['icon']];
+            $grouped[$i['menu']][] = [
+                'label'   => $i['label'],
+                'href'    => $i['href'],
+                'icon'    => $i['icon'],
+                'feature' => $i['feature'],
+            ];
         }
 
         return array_map(
