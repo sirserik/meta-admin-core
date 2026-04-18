@@ -86,20 +86,28 @@ class AdminCoreServiceProvider extends ServiceProvider
 
                 // Ship "Обновления" + "Фичи" menu items for every consumer.
                 $prefix = config('admin-core.prefix', 'admin');
-                // «Страницы сайта» — quick links to /admin/blocks?page=<slug>
-                // for every page declared in the BlockCatalog. One flat
-                // section, items ordered by catalog groups so related
-                // pages cluster together.
+                // «Блоки по страницам» — sidebar shortcut to the block
+                // editor pre-filtered to each page declared in BlockCatalog.
+                //
+                // Distinct from the «Страницы» resource (which stores
+                // per-page metadata: SEO, template, status, cover) — this
+                // section edits the VISUAL BLOCK content composed into
+                // each page (hero, cards, FAQ, timeline, …).
+                //
+                // One flat section, items ordered by catalog groups so
+                // related pages cluster together. Section header shows
+                // the count; collapsed by default unless the current URL
+                // matches one of the items.
                 if ($this->app->bound(\Meta\AdminCore\Contracts\BlockCatalog::class)) {
                     $catalog = $this->app->make(\Meta\AdminCore\Contracts\BlockCatalog::class);
                     $order = 0;
-                    foreach ($catalog->pagesGrouped() as $groupLabel => $pages) {
+                    foreach ($catalog->pagesGrouped() as $pages) {
                         foreach ($pages as $slug => $label) {
                             $core->menuItem(
                                 $label,
                                 "/{$prefix}/blocks?page={$slug}",
-                                'fa-file-lines',
-                                'Страницы сайта',
+                                'fa-cube',
+                                'Блоки по страницам',
                                 80 + $order,
                             );
                             $order++;

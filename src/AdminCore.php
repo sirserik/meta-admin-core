@@ -368,14 +368,14 @@ class AdminCore
         // feature-module sections always at the bottom (so optional stuff
         // doesn't interrupt the main workflow).
         $sectionOrder = [
-            'Главное'        => 10,
-            'Контент'        => 20,
-            'Страницы сайта' => 25,
-            'Образование'    => 30,
-            'Обращения'      => 40,
-            'Библиотека'     => 50,
-            'Медиа'          => 60,
-            'Система'        => 70,
+            'Главное'             => 10,
+            'Контент'             => 20,
+            'Блоки по страницам'  => 25,
+            'Образование'         => 30,
+            'Обращения'           => 40,
+            'Библиотека'          => 50,
+            'Медиа'               => 60,
+            'Система'             => 70,
         ];
         $sections = [];
         foreach ($grouped as $name => $items) {
