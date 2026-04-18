@@ -326,7 +326,7 @@ function onPickerOpen() {
                 <header class="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4">
                     <div class="flex-1 min-w-0">
                         <h2 class="text-lg font-bold text-gray-900 dark:text-white">Выбор типа блока</h2>
-                        <p class="text-xs text-gray-500 mt-0.5">Сложные блоки (слайды/галереи) редактируются дальше через «Старый редактор».</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Выбери визуальный тип — он определяет, какие поля появятся во вкладке «Данные».</p>
                     </div>
                     <div class="relative w-80">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>

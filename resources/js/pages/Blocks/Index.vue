@@ -135,7 +135,6 @@ function statusLabel(s) { return (props.statuses.find(x => x.value === s) || {})
                     <div class="flex gap-1">
                         <Link :href="`/admin/blocks/${b.id}/edit`" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"><i class="fas fa-pen"></i></Link>
                         <button @click="toggle(b)" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><i class="fas" :class="b.is_active ? 'fa-eye-slash' : 'fa-eye'"></i></button>
-                        <a :href="`/admin/blocks/${b.id}/edit-legacy`" class="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title="Старый редактор (для сложных блоков)"><i class="fas fa-tools"></i></a>
                         <button @click="destroy(b)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
