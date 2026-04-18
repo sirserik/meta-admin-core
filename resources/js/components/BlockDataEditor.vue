@@ -174,6 +174,54 @@ const COLOR_PRESETS = [
 function colorHex(value) {
     return COLOR_PRESETS.find((c) => c.value === value)?.hex || value || '#9ca3af';
 }
+
+// Extract a friendly filename from a URL (strip query + path).
+function fileNameFromUrl(url) {
+    if (!url) return '';
+    try {
+        const cleaned = String(url).split('?')[0].split('#')[0];
+        const last = cleaned.split('/').filter(Boolean).pop() || '';
+        return decodeURIComponent(last);
+    } catch { return String(url); }
+}
+
+function fileExtension(url) {
+    const name = fileNameFromUrl(url);
+    const dot = name.lastIndexOf('.');
+    return dot >= 0 ? name.slice(dot + 1).toLowerCase() : '';
+}
+
+const FILE_ICONS = {
+    pdf: { icon: 'fa-file-pdf',        color: '#dc2626' },
+    doc: { icon: 'fa-file-word',       color: '#2563eb' },
+    docx:{ icon: 'fa-file-word',       color: '#2563eb' },
+    xls: { icon: 'fa-file-excel',      color: '#16a34a' },
+    xlsx:{ icon: 'fa-file-excel',      color: '#16a34a' },
+    ppt: { icon: 'fa-file-powerpoint', color: '#ea580c' },
+    pptx:{ icon: 'fa-file-powerpoint', color: '#ea580c' },
+    zip: { icon: 'fa-file-archive',    color: '#6b7280' },
+    rar: { icon: 'fa-file-archive',    color: '#6b7280' },
+    '7z':{ icon: 'fa-file-archive',    color: '#6b7280' },
+    jpg: { icon: 'fa-file-image',      color: '#9333ea' },
+    jpeg:{ icon: 'fa-file-image',      color: '#9333ea' },
+    png: { icon: 'fa-file-image',      color: '#9333ea' },
+    gif: { icon: 'fa-file-image',      color: '#9333ea' },
+    webp:{ icon: 'fa-file-image',      color: '#9333ea' },
+    mp4: { icon: 'fa-file-video',      color: '#0891b2' },
+    mp3: { icon: 'fa-file-audio',      color: '#0891b2' },
+    txt: { icon: 'fa-file-alt',        color: '#6b7280' },
+    rtf: { icon: 'fa-file-alt',        color: '#6b7280' },
+    csv: { icon: 'fa-file-csv',        color: '#16a34a' },
+};
+
+function fileIcon(url) {
+    const ext = fileExtension(url);
+    return FILE_ICONS[ext] || { icon: 'fa-file', color: '#6b7280' };
+}
+
+function isExternalUrl(url) {
+    return /^https?:\/\//i.test(url || '');
+}
 </script>
 
 <template>
@@ -209,8 +257,9 @@ function colorHex(value) {
                     Пока нет записей. Нажми «Добавить».
                 </div>
 
-                <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-                    <div v-for="(row, i) in getArray(field.key)" :key="i" class="p-4 space-y-4">
+                <div v-else class="p-3 space-y-3 bg-gray-50 dark:bg-gray-900/30">
+                    <div v-for="(row, i) in getArray(field.key)" :key="i"
+                        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4 space-y-4 shadow-sm">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-mono text-gray-400">#{{ i + 1 }}</span>
@@ -301,20 +350,38 @@ function colorHex(value) {
                                     </label>
                                 </div>
 
-                                <div v-else-if="sub.type === 'file'" class="flex items-center gap-2">
-                                    <input type="text" placeholder="URL файла"
-                                        :value="row[sub.key] ?? ''"
-                                        @input="e => updateRow(field, i, sub.key, e.target.value)"
-                                        class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
-                                    <label class="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200" title="PDF, DOC, XLS, ZIP…">
-                                        <i class="fas fa-file-arrow-up text-xs"></i>
-                                        <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden"
-                                            @change="pickFile($event, res => updateRow(field, i, sub.key, res.url, {
-                                                filename: res.filename,
-                                                size: res.size,
-                                                ext: res.ext,
-                                            }))">
-                                    </label>
+                                <div v-else-if="sub.type === 'file'" class="space-y-2">
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" placeholder="URL файла"
+                                            :value="row[sub.key] ?? ''"
+                                            @input="e => updateRow(field, i, sub.key, e.target.value)"
+                                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                                        <label class="flex-shrink-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200" title="PDF, DOC, XLS, ZIP…">
+                                            <i class="fas fa-file-arrow-up text-xs"></i>
+                                            <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden"
+                                                @change="pickFile($event, res => updateRow(field, i, sub.key, res.url, {
+                                                    filename: res.filename,
+                                                    size: res.size,
+                                                    ext: res.ext,
+                                                }))">
+                                        </label>
+                                    </div>
+                                    <a v-if="row[sub.key]" :href="row[sub.key]" target="_blank" rel="noopener"
+                                        class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 hover:bg-white dark:hover:bg-gray-800 transition">
+                                        <div class="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+                                            :style="{ background: fileIcon(row[sub.key]).color + '20', color: fileIcon(row[sub.key]).color }">
+                                            <i :class="'fas ' + fileIcon(row[sub.key]).icon"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ fileNameFromUrl(row[sub.key]) }}</div>
+                                            <div class="text-xs text-gray-500 flex items-center gap-1.5">
+                                                <span class="uppercase">{{ fileExtension(row[sub.key]) || 'file' }}</span>
+                                                <span v-if="row.size">· {{ (row.size / 1024).toFixed(1) }} KB</span>
+                                                <span v-if="isExternalUrl(row[sub.key])" class="flex items-center gap-1"><i class="fas fa-external-link-alt text-[10px]"></i>внешняя</span>
+                                            </div>
+                                        </div>
+                                        <i class="fas fa-arrow-up-right-from-square text-gray-400 text-xs"></i>
+                                    </a>
                                 </div>
 
                                 <div v-else-if="sub.type === 'translatable'" class="space-y-1">
@@ -333,17 +400,35 @@ function colorHex(value) {
                                         class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"></textarea>
                                 </div>
 
-                                <div v-else-if="sub.type === 'translatable_file'" class="flex items-center gap-2">
-                                    <input type="text"
-                                        :value="tVal(row, sub.key, activeLocale)"
-                                        @input="e => setTRow(field, i, sub.key, activeLocale, e.target.value)"
-                                        :placeholder="'URL ' + activeLocale.toUpperCase()"
-                                        class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
-                                    <label class="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200" title="PDF, DOC, XLS, ZIP…">
-                                        <i class="fas fa-file-arrow-up text-xs"></i>
-                                        <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden"
-                                            @change="pickFile($event, res => setTRow(field, i, sub.key, activeLocale, res.url))">
-                                    </label>
+                                <div v-else-if="sub.type === 'translatable_file'" class="space-y-2">
+                                    <div class="flex items-center gap-2">
+                                        <input type="text"
+                                            :value="tVal(row, sub.key, activeLocale)"
+                                            @input="e => setTRow(field, i, sub.key, activeLocale, e.target.value)"
+                                            :placeholder="'URL ' + activeLocale.toUpperCase()"
+                                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                                        <label class="flex-shrink-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200" title="PDF, DOC, XLS, ZIP…">
+                                            <i class="fas fa-file-arrow-up text-xs"></i>
+                                            <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden"
+                                                @change="pickFile($event, res => setTRow(field, i, sub.key, activeLocale, res.url))">
+                                        </label>
+                                    </div>
+                                    <a v-if="tVal(row, sub.key, activeLocale)" :href="tVal(row, sub.key, activeLocale)" target="_blank" rel="noopener"
+                                        class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 hover:bg-white dark:hover:bg-gray-800 transition">
+                                        <div class="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+                                            :style="{ background: fileIcon(tVal(row, sub.key, activeLocale)).color + '20', color: fileIcon(tVal(row, sub.key, activeLocale)).color }">
+                                            <i :class="'fas ' + fileIcon(tVal(row, sub.key, activeLocale)).icon"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ fileNameFromUrl(tVal(row, sub.key, activeLocale)) }}</div>
+                                            <div class="text-xs text-gray-500 flex items-center gap-1.5">
+                                                <span class="uppercase">{{ fileExtension(tVal(row, sub.key, activeLocale)) || 'file' }}</span>
+                                                <span v-if="isExternalUrl(tVal(row, sub.key, activeLocale))" class="flex items-center gap-1"><i class="fas fa-external-link-alt text-[10px]"></i>внешняя</span>
+                                                <span class="ml-1 px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-[10px]">{{ activeLocale.toUpperCase() }}</span>
+                                            </div>
+                                        </div>
+                                        <i class="fas fa-arrow-up-right-from-square text-gray-400 text-xs"></i>
+                                    </a>
                                 </div>
 
                                     <input v-else :type="sub.type === 'url' ? 'url' : sub.type === 'number' ? 'number' : 'text'"
