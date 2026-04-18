@@ -5,6 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-04-18
+
+### Added
+- **Feature toggles.** New `config('admin-core.features')` array and
+  `AdminCore::enabled($name)` / `AdminCore::whenEnabled($name, fn)`
+  helpers let consumer sites enable or disable optional admin modules
+  per environment:
+  ```php
+  AdminCore::whenEnabled('sdg', function () {
+      AdminCore::resource('sdg-goals', [...]);
+      AdminCore::resource('sdg-news',  [...]);
+  });
+  ```
+  ```env
+  FEATURE_SDG=true
+  FEATURE_GREEN_DEAL=false
+  FEATURE_LIBRARY=true
+  FEATURE_PROJECTS=false
+  ```
+- Default flags in `config/admin-core.php` — always-on (news, articles,
+  pages, blocks, schools, programs, teachers, management, vacancies,
+  leads, redirects) and opt-in (sdg, green_deal, library, catalog,
+  projects, rector_questions).
+
+
 ## [0.14.1] — 2026-04-18
 
 ### Added

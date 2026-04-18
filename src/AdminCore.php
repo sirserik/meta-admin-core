@@ -154,6 +154,33 @@ class AdminCore
         return $this->dashboardQuickActions;
     }
 
+    /**
+     * Feature-flag check. Returns true if the named feature is enabled in
+     * config('admin-core.features'). Typical usage in AppServiceProvider:
+     *
+     *   if (AdminCore::enabled('sdg')) {
+     *       AdminCore::resource('sdg-goals', [...]);
+     *   }
+     *
+     * Unknown feature names return false.
+     */
+    public function enabled(string $feature): bool
+    {
+        return (bool) config("admin-core.features.{$feature}", false);
+    }
+
+    /**
+     * Wrap a callback so it only runs when the feature is enabled.
+     * Chainable: AdminCore::whenEnabled('sdg', fn () => ...);
+     */
+    public function whenEnabled(string $feature, callable $fn): self
+    {
+        if ($this->enabled($feature)) {
+            $fn($this);
+        }
+        return $this;
+    }
+
     public function getResources(): Collection
     {
         return collect($this->resources);
