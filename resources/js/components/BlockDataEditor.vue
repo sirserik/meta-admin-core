@@ -13,6 +13,7 @@
  * rendered existing values as empty.
  */
 import { computed, ref } from 'vue';
+import FilePreviewModal from './FilePreviewModal.vue';
 
 const props = defineProps({
     modelValue:    { type: String, default: '{}' },
@@ -222,6 +223,12 @@ function fileIcon(url) {
 function isExternalUrl(url) {
     return /^https?:\/\//i.test(url || '');
 }
+
+const previewRef = ref(null);
+function openPreview(url, filename) {
+    if (!url) return;
+    previewRef.value?.open(url, filename || '');
+}
 </script>
 
 <template>
@@ -366,8 +373,8 @@ function isExternalUrl(url) {
                                                 }))">
                                         </label>
                                     </div>
-                                    <a v-if="row[sub.key]" :href="row[sub.key]" target="_blank" rel="noopener"
-                                        class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 hover:bg-white dark:hover:bg-gray-800 transition">
+                                    <button v-if="row[sub.key]" type="button" @click="openPreview(row[sub.key], row.filename)"
+                                        class="w-full flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 hover:bg-white dark:hover:bg-gray-800 hover:border-red-300 transition text-left">
                                         <div class="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
                                             :style="{ background: fileIcon(row[sub.key]).color + '20', color: fileIcon(row[sub.key]).color }">
                                             <i :class="'fas ' + fileIcon(row[sub.key]).icon"></i>
@@ -380,8 +387,8 @@ function isExternalUrl(url) {
                                                 <span v-if="isExternalUrl(row[sub.key])" class="flex items-center gap-1"><i class="fas fa-external-link-alt text-[10px]"></i>внешняя</span>
                                             </div>
                                         </div>
-                                        <i class="fas fa-arrow-up-right-from-square text-gray-400 text-xs"></i>
-                                    </a>
+                                        <i class="fas fa-eye text-gray-400 text-xs"></i>
+                                    </button>
                                 </div>
 
                                 <div v-else-if="sub.type === 'translatable'" class="space-y-1">
@@ -413,8 +420,9 @@ function isExternalUrl(url) {
                                                 @change="pickFile($event, res => setTRow(field, i, sub.key, activeLocale, res.url))">
                                         </label>
                                     </div>
-                                    <a v-if="tVal(row, sub.key, activeLocale)" :href="tVal(row, sub.key, activeLocale)" target="_blank" rel="noopener"
-                                        class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 hover:bg-white dark:hover:bg-gray-800 transition">
+                                    <button v-if="tVal(row, sub.key, activeLocale)" type="button"
+                                        @click="openPreview(tVal(row, sub.key, activeLocale), tVal(row, 'title', activeLocale))"
+                                        class="w-full flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 hover:bg-white dark:hover:bg-gray-800 hover:border-red-300 transition text-left">
                                         <div class="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
                                             :style="{ background: fileIcon(tVal(row, sub.key, activeLocale)).color + '20', color: fileIcon(tVal(row, sub.key, activeLocale)).color }">
                                             <i :class="'fas ' + fileIcon(tVal(row, sub.key, activeLocale)).icon"></i>
@@ -427,8 +435,8 @@ function isExternalUrl(url) {
                                                 <span class="ml-1 px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-[10px]">{{ activeLocale.toUpperCase() }}</span>
                                             </div>
                                         </div>
-                                        <i class="fas fa-arrow-up-right-from-square text-gray-400 text-xs"></i>
-                                    </a>
+                                        <i class="fas fa-eye text-gray-400 text-xs"></i>
+                                    </button>
                                 </div>
 
                                     <input v-else :type="sub.type === 'url' ? 'url' : sub.type === 'number' ? 'number' : 'text'"
@@ -481,5 +489,8 @@ function isExternalUrl(url) {
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
             </div>
         </template>
+
+        <!-- Inline viewer (PDF / image / video / fallback). -->
+        <FilePreviewModal ref="previewRef" />
     </div>
 </template>
