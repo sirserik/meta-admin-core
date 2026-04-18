@@ -393,11 +393,15 @@ class DefaultBlockCatalog implements BlockCatalog
         ],
         'links' => [
             'items' => [
+                ['key' => 'layout', 'label' => 'Layout', 'type' => 'text', 'placeholder' => 'grid / list'],
                 [
-                    'key' => 'items', 'label' => 'Документы / ссылки', 'type' => 'array',
+                    'key' => 'links', 'label' => 'Документы / ссылки', 'type' => 'array',
                     'item_fields' => [
-                        ['key' => 'label', 'label' => 'Название', 'type' => 'text'],
-                        ['key' => 'url',   'label' => 'URL / файл','type' => 'file'],
+                        ['key' => 'icon',        'label' => 'Иконка (FA)',   'type' => 'text'],
+                        ['key' => 'color',       'label' => 'Цвет',          'type' => 'text', 'placeholder' => 'blue / red / green / gold / purple'],
+                        ['key' => 'title',       'label' => 'Название',      'type' => 'translatable'],
+                        ['key' => 'description', 'label' => 'Описание',      'type' => 'translatable_textarea'],
+                        ['key' => 'url',         'label' => 'URL / файл',    'type' => 'translatable_file'],
                     ],
                 ],
             ],

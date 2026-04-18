@@ -12,15 +12,20 @@
  * where dynamic-key v-model binding against a ref-wrapped object
  * rendered existing values as empty.
  */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     modelValue:    { type: String, default: '{}' },
     schema:        { type: Object, default: null },
     uploadUrl:     { type: String, default: '/admin/upload/image' },
     fileUploadUrl: { type: String, default: '/admin/upload/file' },
+    locales:       { type: Array, default: () => ['ru', 'kk', 'en'] },
 });
 const emit = defineEmits(['update:modelValue']);
+
+// Locale currently selected for translatable fields. Shared across all
+// such fields in the block (matches the outer block form's pattern).
+const activeLocale = ref('ru');
 
 const data = computed(() => {
     try {
@@ -75,6 +80,23 @@ function updateRow(field, i, subKey, value, extras = {}) {
     setArray(field.key, arr);
 }
 
+// Translatable helpers — value is an object like {ru:"…",kk:"…",en:"…"}.
+// We store it at the row's sub-key and flip one locale at a time.
+function tVal(obj, key, locale) {
+    const v = obj?.[key];
+    if (!v) return '';
+    if (typeof v === 'string') return locale === 'ru' ? v : '';
+    return v[locale] ?? '';
+}
+function setTRow(field, i, subKey, locale, value) {
+    const arr = getArray(field.key).slice();
+    const row = { ...arr[i] };
+    const existing = (row[subKey] && typeof row[subKey] === 'object') ? row[subKey] : { ru: '', kk: '', en: '' };
+    row[subKey] = { ...existing, [locale]: value };
+    arr[i] = row;
+    setArray(field.key, arr);
+}
+
 // ===== Uploads =====
 
 async function doUpload(url, file) {
@@ -117,6 +139,18 @@ async function pickFile(e, onSet) {
 
 <template>
     <div class="space-y-5">
+        <!-- Locale picker: only shown if any schema field is translatable. -->
+        <div v-if="(schema.items || []).some(f => f.item_fields?.some(s => s.type?.startsWith('translatable')) || (f.type || '').startsWith('translatable'))"
+             class="inline-flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 text-xs">
+            <button v-for="loc in locales" :key="loc" type="button" @click="activeLocale = loc"
+                class="px-3 py-1.5 rounded-md transition-colors"
+                :class="activeLocale === loc
+                    ? 'bg-white dark:bg-gray-800 text-red-700 dark:text-red-300 shadow-sm font-medium'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'">
+                {{ loc.toUpperCase() }}
+            </button>
+        </div>
+
         <template v-for="field in (schema.items || [])" :key="field.key">
             <!-- Array-of-records -->
             <div v-if="field.type === 'array'" class="border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -189,6 +223,35 @@ async function pickFile(e, onSet) {
                                                 size: res.size,
                                                 ext: res.ext,
                                             }))">
+                                    </label>
+                                </div>
+
+                                <div v-else-if="sub.type === 'translatable'" class="space-y-1">
+                                    <input type="text"
+                                        :value="tVal(row, sub.key, activeLocale)"
+                                        @input="e => setTRow(field, i, sub.key, activeLocale, e.target.value)"
+                                        :placeholder="activeLocale.toUpperCase()"
+                                        class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                                </div>
+
+                                <div v-else-if="sub.type === 'translatable_textarea'" class="space-y-1">
+                                    <textarea rows="2"
+                                        :value="tVal(row, sub.key, activeLocale)"
+                                        @input="e => setTRow(field, i, sub.key, activeLocale, e.target.value)"
+                                        :placeholder="activeLocale.toUpperCase()"
+                                        class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"></textarea>
+                                </div>
+
+                                <div v-else-if="sub.type === 'translatable_file'" class="flex items-center gap-2">
+                                    <input type="text"
+                                        :value="tVal(row, sub.key, activeLocale)"
+                                        @input="e => setTRow(field, i, sub.key, activeLocale, e.target.value)"
+                                        :placeholder="'URL ' + activeLocale.toUpperCase()"
+                                        class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                                    <label class="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200" title="PDF, DOC, XLS, ZIP…">
+                                        <i class="fas fa-file-arrow-up text-xs"></i>
+                                        <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden"
+                                            @change="pickFile($event, res => setTRow(field, i, sub.key, activeLocale, res.url))">
                                     </label>
                                 </div>
 
