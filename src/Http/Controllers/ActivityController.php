@@ -35,7 +35,7 @@ class ActivityController extends Controller
             'action'      => $l->action,
             'model_type'  => $l->model_type ? class_basename($l->model_type) : null,
             'model_id'    => $l->model_id,
-            'description' => $l->description,
+            'description' => $this->humanizeDescription($l->description),
             'ip_address'  => $l->ip_address,
             'created_at'  => optional($l->created_at)->format('d.m.Y H:i:s'),
         ]);
@@ -46,5 +46,30 @@ class ActivityController extends Controller
             'actions' => ActivityLog::query()->distinct()->orderBy('action')->pluck('action'),
             'filters' => $filters,
         ]);
+    }
+
+    /**
+     * Unwrap JSON-encoded multi-locale titles from activity descriptions.
+     *
+     * When a consumer's ActivityLog::log() helper auto-generates the
+     * description from `$model->title` and that field happens to store
+     * `{"ru":"...","kk":"..."}` (multi-locale JSON), the raw JSON leaks
+     * into the log. Detect that pattern and replace with the ru value.
+     */
+    protected function humanizeDescription(?string $raw): ?string
+    {
+        if ($raw === null || $raw === '') return $raw;
+
+        return preg_replace_callback(
+            '/«(\{.+?\})»/u',
+            function ($matches) {
+                $decoded = json_decode($matches[1], true);
+                if (!is_array($decoded)) return $matches[0];
+                $value = $decoded['ru'] ?? $decoded['kk'] ?? $decoded['en'] ?? null;
+                if ($value === null || $value === '') return $matches[0];
+                return '«' . trim((string) $value) . '»';
+            },
+            $raw,
+        );
     }
 }

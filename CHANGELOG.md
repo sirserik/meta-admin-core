@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.18.2] — 2026-04-18
+
+### Fixed
+- **Activity log descriptions decode multi-locale titles.** When a
+  logged model's `title`/`name` stored `{"ru":"...","kk":"..."}`
+  JSON (PageBlock and friends), the raw JSON leaked into the
+  description, rendering as literal curly-brace noise on
+  `/admin/activity`. The ActivityController now unwraps the JSON on
+  the fly in `humanizeDescription()` — historical rows render
+  cleanly without any data migration.
+
 ## [0.18.1] — 2026-04-18
 
 ### Changed
