@@ -47,8 +47,14 @@ trait Translatable
     protected function getCachedTranslations(): array
     {
         if ($this->translationsCache === null) {
-            $this->translationsCache = $this->translations()
-                ->get()
+            // Use the eager-loaded relation when available to kill N+1
+            // (one SELECT per instance) on pages that render collections
+            // of translatable models.
+            $source = $this->relationLoaded('translations')
+                ? $this->getRelation('translations')
+                : $this->translations()->get();
+
+            $this->translationsCache = $source
                 ->mapWithKeys(fn (Translation $t) => ["{$t->locale}.{$t->field}" => $t->value])
                 ->toArray();
         }
