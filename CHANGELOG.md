@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-04-18
+
+### Fixed
+- **Legacy `/admin/dashboard` URL now redirects to `/admin`.** Before this
+  fix, consumer apps with old code or tests pointing at `/admin/dashboard`
+  hit the generic `ResourceController` with `resource=dashboard`, which
+  404'd because no resource of that name is registered. The package now
+  ships an explicit 302 redirect from `/admin/dashboard` → `/admin`
+  (honours the configured `prefix`).
+
 ## [0.3.1] — 2026-04-18
 
 ### Added
