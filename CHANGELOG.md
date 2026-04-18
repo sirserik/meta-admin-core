@@ -5,6 +5,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-04-18
+
+### Added
+- **Mobile-first responsive list UI.** `Resource/Index.vue` now renders
+  as a proper HTML table on `md+` screens with fixed-width columns
+  (Status 144px, Actions 144px, sticky header) and a stacked card
+  list below `md`. Card rows show image + title + inline
+  Edit/Show-hide/Delete text-link actions. No more invisible
+  action icons on narrow viewports.
+- **Two-column form layout.** `Resource/Form.vue` splits into main
+  content (translatable fields) on the left and a right sidebar
+  (320px) for image + metadata attributes on `lg+`. On mobile
+  everything stacks and a sticky bottom action bar holds Save/
+  Cancel buttons so they stay reachable. Attributes can opt into
+  the main column via `group: 'content'` or `main: true` in the
+  resource config.
+- **Collapsible sidebar on desktop.** New toggle at the top of the
+  sidebar shrinks it to 64px (icon-only). State persisted in
+  `localStorage` so it survives reloads.
+- **Cmd+K / Ctrl+K command palette** (`CommandPalette.vue`). Fuzzy
+  filter over all registered nav items, arrow-key navigation,
+  Enter to go. Search button in the header opens it, `⌘K` badge
+  hints at the shortcut.
+- **Toast notifications** (`FlashToasts.vue`). Inertia flash props
+  (`success`/`error`/`info`) pop as sliding toasts in the bottom
+  right, auto-dismiss after 4s. Legacy inline banners removed
+  from the layout. Consumers can fire ad-hoc toasts via
+  `window.dispatchEvent(new CustomEvent('admin-toast', { detail: {...} }))`.
+
+### Changed
+- Table actions column always visible on desktop (144px fixed
+  width, `whitespace-nowrap`) — previously collapsed to 0px when
+  titles were long, hiding Edit/Delete icons.
+- Header gets a proper search button and truncates long user
+  emails on narrow screens.
+- Action buttons on list rows now have `title=` tooltips.
+
 ## [0.18.2] — 2026-04-18
 
 ### Fixed
