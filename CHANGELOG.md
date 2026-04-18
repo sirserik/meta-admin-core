@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-04-18
+
+### Fixed
+- **Save/delete failed for resources whose model uses a non-`id` route
+  key** (e.g. News uses `slug` via `getRouteKeyName()`). Vue form posted
+  `PUT /admin/news/{item.id}` but the per-resource routes look up the
+  model by `route_key` → 404.
+- `presentRow` and `presentForm` now include `_route_key` (the value
+  returned by `$m->getRouteKey()`). Both `Resource/Form.vue` (submit)
+  and `Resource/Index.vue` (delete, toggle-publish) use it. Falls back
+  to `id` for backward-compat.
+
+
 ## [0.5.0] — 2026-04-18
 
 ### Added

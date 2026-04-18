@@ -68,8 +68,11 @@ function removeImage() {
 }
 
 function submit() {
+    // Use _route_key sent from the backend (slug for News, id for most
+    // others). Fallback to id for older payloads.
+    const key = props.item?._route_key ?? props.item?.id;
     const url = props.is_edit
-        ? `/admin/${props.resource}/${props.item.id}`
+        ? `/admin/${props.resource}/${key}`
         : `/admin/${props.resource}`;
     form.post(url, { forceFormData: !!props.image_field });
 }

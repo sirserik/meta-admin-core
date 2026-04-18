@@ -23,12 +23,16 @@ watch(search, (v) => {
     }, 300);
 });
 
+function rowKey(row) {
+    // Use same slug-or-id convention as presentRow/presentForm.
+    return row._route_key ?? row.id;
+}
 function destroy(row) {
     if (!confirm(`Удалить «${row.title}»?`)) return;
-    router.delete(`/admin/${props.resource}/${row.id}`, { preserveScroll: true });
+    router.delete(`/admin/${props.resource}/${rowKey(row)}`, { preserveScroll: true });
 }
 function toggle(row) {
-    router.patch(`/admin/${props.resource}/${row.id}/toggle-publish`, {}, { preserveScroll: true });
+    router.patch(`/admin/${props.resource}/${rowKey(row)}/toggle-publish`, {}, { preserveScroll: true });
 }
 
 function statusBadge(row) {

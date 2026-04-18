@@ -394,8 +394,9 @@ class ResourceController extends Controller
             $customUrl = url("/{$prefix}/{$config['name']}/{$m->getRouteKey()}/edit");
         }
         $row = [
-            'id'  => $m->id,
-            'url' => $customUrl,
+            'id'         => $m->id,
+            '_route_key' => $m->getRouteKey(),
+            'url'        => $customUrl,
         ];
         // Title/name
         foreach (['title', 'name'] as $f) {
@@ -427,7 +428,14 @@ class ResourceController extends Controller
 
     protected function presentForm(Model $m, array $config): array
     {
-        $out = ['id' => $m->id];
+        // `_route_key` is whatever getRouteKeyName returns for this model —
+        // 'id' by default but models like News override to 'slug'. The Vue
+        // form builds PUT/DELETE URLs from it, so update/destroy hit the
+        // right findModel lookup.
+        $out = [
+            'id'          => $m->id,
+            '_route_key'  => $m->getRouteKey(),
+        ];
 
         foreach ($config['plain'] as $col) {
             if (Schema::hasColumn($m->getTable(), $col)) {
