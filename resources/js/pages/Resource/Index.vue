@@ -9,6 +9,7 @@ const props = defineProps({
     items: Object,       // paginator
     resource: String,    // resource name (articles, news, programs, …)
     filters: Object,
+    activeFilterLabels: { type: Object, default: () => ({}) },
     fields: Array,
 });
 
@@ -89,11 +90,14 @@ function statusLabel(row) {
         </template>
     </PageHeader>
 
-    <!-- Filter banner — show what's filtered, let user clear -->
-    <div v-if="hasActiveFilters" class="mb-4 flex items-center gap-2 text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 px-4 py-3 rounded-lg">
+    <!-- Filter banner — human-readable labels (e.g. "Школа: Экономика и право"). -->
+    <div v-if="hasActiveFilters" class="mb-4 flex items-center gap-2 flex-wrap text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 px-4 py-3 rounded-lg">
         <i class="fas fa-filter"></i>
-        <span>Фильтр активен:</span>
-        <span v-for="(v, k) in activeFilters" :key="k" class="font-mono bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">{{ k }}={{ v }}</span>
+        <span class="font-medium">Показаны только:</span>
+        <span v-for="(v, k) in activeFilters" :key="k" class="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">
+            <span class="text-amber-600 dark:text-amber-400">{{ (activeFilterLabels[k] && activeFilterLabels[k].label) || k }}:</span>
+            <strong>{{ (activeFilterLabels[k] && activeFilterLabels[k].value) || v }}</strong>
+        </span>
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">

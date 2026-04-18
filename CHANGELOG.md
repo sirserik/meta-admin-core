@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-04-18
+
+### Added
+- **Human-readable filter labels.** Filter banner on the index list
+  now shows resolved names instead of raw IDs. Declare `label` + an
+  optional `resolver` closure:
+  ```php
+  'filters' => [
+      'school_id' => [
+          'type'     => 'exact',
+          'label'    => 'Школа',
+          'resolver' => fn ($id) => School::find($id)?->name,
+      ],
+  ],
+  ```
+  Banner becomes "Показаны только: Школа: Экономика и право" instead of
+  "school_id=5".
+
+
 ## [0.12.0] — 2026-04-18
 
 ### Added

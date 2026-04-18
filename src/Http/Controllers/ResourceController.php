@@ -43,6 +43,8 @@ class ResourceController extends Controller
             $this->applySearch($query, $filters['search'], $config);
         }
         // Apply declared column filters (?field=value — exact match by default).
+        // Also build human-readable labels for the "Фильтр активен" banner.
+        $activeFilterLabels = [];
         foreach (($config['filters'] ?? []) as $field => $cfg) {
             $value = $filters[$field] ?? null;
             if ($value === null || $value === '') continue;
@@ -53,18 +55,31 @@ class ResourceController extends Controller
                 'in'    => $query->whereIn($column, (array) $value),
                 default => $query->where($column, $value),
             };
+            // Resolve human label: config['label'] + config['resolver'] closure.
+            if (is_array($cfg)) {
+                $label = $cfg['label'] ?? $field;
+                $resolved = $value;
+                if (isset($cfg['resolver']) && is_callable($cfg['resolver'])) {
+                    try { $resolved = call_user_func($cfg['resolver'], $value) ?? $value; }
+                    catch (\Throwable) { /* fall back to raw value */ }
+                }
+                $activeFilterLabels[$field] = ['label' => $label, 'value' => (string) $resolved, 'raw' => $value];
+            } else {
+                $activeFilterLabels[$field] = ['label' => $field, 'value' => (string) $value, 'raw' => $value];
+            }
         }
 
         $paginator = $query->paginate($config['per_page'])->withQueryString();
         $paginator->getCollection()->transform(fn (Model $m) => $this->presentRow($m, $config));
 
         return Inertia::render($config['page'] . '/Index', [
-            'title'       => $config['label'],
-            'items'       => $paginator,
-            'resource'    => $config['name'],
-            'filters'     => $filters,
-            'fields'      => $config['fields'],
-            'attributes'  => $this->resolveAttributeOptions($config['attributes']),
+            'title'              => $config['label'],
+            'items'              => $paginator,
+            'resource'           => $config['name'],
+            'filters'            => $filters,
+            'activeFilterLabels' => $activeFilterLabels,
+            'fields'             => $config['fields'],
+            'attributes'         => $this->resolveAttributeOptions($config['attributes']),
         ]);
     }
 
