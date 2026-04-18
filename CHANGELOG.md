@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-04-18
+
+### Added
+- **Package-shipped migrations.** Fresh Laravel installs get the base
+  tables out of the box (`translations`, `activity_logs`, `settings`,
+  `redirects`, `contacts`). Each migration has a `Schema::hasTable()`
+  guard so existing consumers with their own schema aren't disturbed.
+- Auto-loaded via `loadMigrationsFrom` in the service provider — just
+  `php artisan migrate` and they run.
+- Also exposed for publishing: `php artisan vendor:publish
+  --tag=admin-core-migrations` copies them into the consumer's
+  `database/migrations` if they want to edit/extend.
+
+
 ## [0.13.0] — 2026-04-18
 
 ### Added

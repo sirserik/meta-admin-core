@@ -51,6 +51,17 @@ class AdminCoreServiceProvider extends ServiceProvider
             }
         });
 
+        // Package migrations — auto-loaded, run on `php artisan migrate`.
+        // Each migration has a `Schema::hasTable()` guard so consumers that
+        // already have these tables (e.g. from their own legacy schema)
+        // are skipped cleanly.
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        // Also publishable for consumers who want to edit/extend the schema.
+        $this->publishes([
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
+        ], 'admin-core-migrations');
+
         // Blade root view namespace
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'admin-core');
 
