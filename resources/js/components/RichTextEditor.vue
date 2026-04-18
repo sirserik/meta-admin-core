@@ -15,11 +15,16 @@ const emit = defineEmits(['update:modelValue']);
 
 const fileInput = ref(null);
 
+// Tiptap's StarterKit v3 now bundles Link and Underline. We disable them
+// there and register our configured instances to avoid duplicate-extension
+// warnings.
 const editor = useEditor({
     content: props.modelValue,
     extensions: [
         StarterKit.configure({
             heading: { levels: [2, 3, 4] },
+            link: false,
+            underline: false,
         }),
         Underline,
         Link.configure({
