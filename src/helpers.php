@@ -1,5 +1,33 @@
 <?php
 
+if (!function_exists('page_blocks')) {
+    /**
+     * Terse Statamic-style accessor for augmented page blocks.
+     *
+     *   page_blocks('home')->get('hero')->title
+     *   page_blocks('sdg-resources')->get('main_links')->links
+     *
+     * Returns the resolver so you can chain `locale()`, `withDrafts()`,
+     * `only()`, `types()` before `get()` / `block()`.
+     */
+    function page_blocks(string $page): \Meta\AdminCore\Content\PageBlockResolver
+    {
+        return \Meta\AdminCore\Content\PageBlockResolver::forPage($page);
+    }
+}
+
+if (!function_exists('page_block')) {
+    /**
+     * Even terser for single-block access:
+     *
+     *   page_block('home', 'hero')?->title
+     */
+    function page_block(string $page, string $key): ?\Meta\AdminCore\Content\PresentedBlock
+    {
+        return \Meta\AdminCore\Content\PageBlockResolver::forPage($page)->block($key);
+    }
+}
+
 if (!function_exists('media_url')) {
     /**
      * Build a public URL to a storage file.
