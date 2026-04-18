@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.18.1] — 2026-04-18
+
+### Changed
+- **`DefaultBlockCatalog` now ships the full META-University block
+  library** — 8 page groups (~30 pages) and 11 block-type categories
+  (~60 types: hero, stats, FAQ, timeline, admission steps, team
+  cards, GDC sections, …). Previously the default only had 3 pages
+  and 7 types, making the page builder unusable out of the box —
+  every consumer had to ship its own catalog just to create
+  anything. Now new sites get a working page builder from day one.
+  Consumer sites that want to customize still rebind the
+  `BlockCatalog` contract.
+
 ## [0.18.0] — 2026-04-18
 
 ### Added
