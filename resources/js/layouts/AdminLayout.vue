@@ -10,6 +10,37 @@ const sidebarCollapsed = ref(false);   // desktop narrow mode
 const paletteRef = ref(null);
 
 const nav = computed(() => page.props.navigation ?? []);
+
+// Expanded-section state, persisted per section in localStorage so
+// each user's layout survives reloads. Default: expand the section
+// whose link is active; collapse the rest.
+const expandedSections = ref({});
+function loadSectionState() {
+    try {
+        const raw = localStorage.getItem('admin-core:sidebar-sections');
+        if (raw) expandedSections.value = JSON.parse(raw) || {};
+    } catch {}
+}
+function persistSectionState() {
+    try { localStorage.setItem('admin-core:sidebar-sections', JSON.stringify(expandedSections.value)); }
+    catch {}
+}
+function isSectionExpanded(section) {
+    // Auto-expand section containing an active item. User's explicit
+    // toggle in localStorage overrides (stored as 'open' / 'closed').
+    const explicit = expandedSections.value[section.section];
+    if (explicit === 'open')   return true;
+    if (explicit === 'closed') return false;
+    return section.items.some((it) => isActive(it.href));
+}
+function toggleSection(section) {
+    const current = isSectionExpanded(section);
+    expandedSections.value = {
+        ...expandedSections.value,
+        [section.section]: current ? 'closed' : 'open',
+    };
+    persistSectionState();
+}
 const brand = computed(() => page.props.brand ?? { name: 'Admin', color: '#C41E3A', logo_char: 'A' });
 
 // Stable color per feature name so each module gets a consistent hue
@@ -47,6 +78,7 @@ onMounted(() => {
         const saved = localStorage.getItem('admin-core:sidebar-collapsed');
         if (saved === '1') sidebarCollapsed.value = true;
     } catch {}
+    loadSectionState();
 });
 
 function toggleCollapsed() {
@@ -99,11 +131,25 @@ function openPalette() {
                     class="hidden md:flex w-full items-center justify-center p-2 mb-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded">
                     <i class="fas fa-angles-right"></i>
                 </button>
-                <div v-for="group in nav" :key="group.section" class="mb-5">
-                    <div v-if="!sidebarCollapsed" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1.5">
-                        {{ group.section }}
-                    </div>
-                    <ul class="space-y-0.5">
+                <div v-for="group in nav" :key="group.section" class="mb-3">
+                    <!-- Collapsible section header. On collapsed sidebar (desktop icon-only
+                         mode) we drop the header entirely and just render items. -->
+                    <button v-if="!sidebarCollapsed" type="button"
+                        @click="toggleSection(group)"
+                        class="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded group hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                        :class="group.items[0]?.feature ? 'text-gray-500' : 'text-gray-400'"
+                        :style="group.items[0]?.feature ? { color: featureColor(group.items[0].feature).text } : null">
+                        <span class="flex items-center gap-2 min-w-0">
+                            <span v-if="group.items[0]?.feature"
+                                class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                :style="{ backgroundColor: featureColor(group.items[0].feature).hex }"></span>
+                            <span class="truncate">{{ group.section }}</span>
+                            <span class="text-gray-400 opacity-70 font-mono text-[9px]">{{ group.items.length }}</span>
+                        </span>
+                        <i class="fas text-[9px] transition-transform"
+                            :class="isSectionExpanded(group) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                    </button>
+                    <ul v-show="sidebarCollapsed || isSectionExpanded(group)" class="space-y-0.5 mt-1">
                         <li v-for="item in group.items" :key="item.href">
                             <Link
                                 :href="item.href"
