@@ -16,7 +16,7 @@ class AdminCoreServiceProvider extends ServiceProvider
     {
         return [
             \Meta\AdminCore\Features\GreenDealFeature::class,
-            // Add more here: SdgFeature, LibraryFeature, ...
+            \Meta\AdminCore\Features\SdgFeature::class,
         ];
     }
 
@@ -60,13 +60,13 @@ class AdminCoreServiceProvider extends ServiceProvider
             // the `web` middleware group so sessions/cookies are available.
             Route::middleware('web')->group(__DIR__ . '/../routes/public.php');
 
-            $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
-
+            // Register built-in feature modules BEFORE admin.php loads, so
+            // their AdminCore::resource() calls land in the registry before
+            // the route-enumeration loop reads from it. Otherwise feature-
+            // registered resources never get per-resource routes emitted.
             if ($this->app->bound(AdminCore::class)) {
                 $core = $this->app->make(AdminCore::class);
 
-                // Register built-in feature modules. Each self-registers its
-                // resources / menu items only if its feature flag is on.
                 foreach ($this->builtInFeatures() as $class) {
                     $module = new $class;
                     $core->registerFeature($module);
@@ -74,6 +74,12 @@ class AdminCoreServiceProvider extends ServiceProvider
                         $module->register($core);
                     }
                 }
+            }
+
+            $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
+
+            if ($this->app->bound(AdminCore::class)) {
+                $core = $this->app->make(AdminCore::class);
 
                 // Ship "Обновления" + "Фичи" menu items for every consumer.
                 $prefix = config('admin-core.prefix', 'admin');

@@ -5,6 +5,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-04-18
+
+### Added
+- **`SdgFeature` shipped as a built-in feature module.** Mirrors
+  `GreenDealFeature`: toggles `sdg-goals` + `sdg-news` resources
+  (17 UN sustainability goals + news items linked to them) on at
+  `/admin/features`. Requires `App\Models\SdgGoal` +
+  `App\Models\SdgNews` on the consumer.
+
+### Fixed
+- **Feature-module resources were missing their per-resource routes.**
+  `AdminCoreServiceProvider::booted()` used to register feature
+  modules AFTER `routes/admin.php` enumerated
+  `AdminCore::getResources()`, so resources declared by modules
+  (like `gdc-pages`) never got `index / create / edit / update /
+  destroy` routes emitted. Now features register BEFORE admin
+  routes load. `/admin/gdc-pages` 200s instead of 404.
+
+## [0.19.2] — 2026-04-18
+
+### Added
+- **Image bubble menu in `RichTextEditor.vue`.** Clicking an image
+  in the Tiptap editor opens a floating toolbar with Replace /
+  Alt / 50%-75%-100% width / Delete. Selected image gets a red
+  outline. `BubbleMenu` import moved to `@tiptap/vue-3/menus`
+  (its v3 subpath).
+
+## [0.19.1] — 2026-04-18
+
+### Fixed
+- **Resource/Index table: Actions column no longer collapses to 0
+  width on long titles.** Switched to `table-fixed` + `<colgroup>`
+  with explicit column widths. Dropped `sticky top-16` on the
+  thead (broke alignment when inside `overflow-hidden` wrapper).
+
 ## [0.19.0] — 2026-04-18
 
 ### Added
