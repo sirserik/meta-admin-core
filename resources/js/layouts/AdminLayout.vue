@@ -23,9 +23,10 @@ const FEATURE_PALETTE = [
     { hex: '#ca8a04', bg: '#ca8a0415', text: '#a16207' }, // gold
     { hex: '#db2777', bg: '#db277715', text: '#be185d' }, // pink
 ];
+// Hand-picked brand-matched colors for shipped FeatureModules.
 const KNOWN_FEATURE_COLORS = {
-    green_deal: FEATURE_PALETTE[0],
-    sdg:        FEATURE_PALETTE[1],
+    green_deal: { hex: '#16a34a', bg: '#16a34a15', text: '#15803d' }, // зелёный лист
+    sdg:        { hex: '#E5243B', bg: '#E5243B15', text: '#b91c2c' }, // SDG goal-1 красный
 };
 function featureColor(feature) {
     if (!feature) return null;

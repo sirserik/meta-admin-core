@@ -335,10 +335,33 @@ class AdminCore
             ];
         }
 
+        // Stable section ordering — standard groups in known positions,
+        // feature-module sections always at the bottom (so optional stuff
+        // doesn't interrupt the main workflow).
+        $sectionOrder = [
+            'Главное'        => 10,
+            'Контент'        => 20,
+            'Образование'    => 30,
+            'Обращения'      => 40,
+            'Библиотека'     => 50,
+            'Медиа'          => 60,
+            'Система'        => 70,
+        ];
+        $sections = [];
+        foreach ($grouped as $name => $items) {
+            $hasFeature = false;
+            foreach ($items as $it) if (!empty($it['feature'])) { $hasFeature = true; break; }
+            $sections[] = [
+                'name'     => $name,
+                'items'    => $items,
+                'priority' => $hasFeature ? 100 : ($sectionOrder[$name] ?? 80),
+            ];
+        }
+        usort($sections, fn ($a, $b) => ($a['priority'] <=> $b['priority']) ?: strcmp($a['name'], $b['name']));
+
         return array_map(
-            fn ($section, $items) => ['section' => $section, 'items' => $items],
-            array_keys($grouped),
-            array_values($grouped),
+            fn ($s) => ['section' => $s['name'], 'items' => $s['items']],
+            $sections,
         );
     }
 
