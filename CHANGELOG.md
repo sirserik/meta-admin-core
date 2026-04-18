@@ -5,6 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-04-18
+
+### Added
+- **`php artisan admin-core:install` — one-command setup.** In a fresh
+  Laravel 11/12 app after `composer require meta/admin-core`, this
+  does everything:
+  1. Publishes `config/admin-core.php` + Inertia root view
+     (`resources/views/admin/inertia.blade.php`).
+  2. Scaffolds `resources/js/admin-spa.js` + `resources/css/admin-spa.css`
+     from stubs (Tailwind v3/v4 auto-detected from `package.json`).
+  3. Patches `bootstrap/app.php` to register
+     `Meta\AdminCore\Http\Middleware\HandleInertiaRequests`.
+  4. Patches `vite.config.js` — adds `admin-spa.{js,css}` to
+     `laravel({input})`, adds `@admin-core` alias, enables
+     `preserveSymlinks`.
+  5. Runs `php artisan migrate --force`.
+  6. Creates `admin@example.com` / `password` admin user.
+  7. Runs `npm install` for the missing deps (Vue, Inertia, Tiptap,
+     FontAwesome, Inter font) and `npm run build`.
+- Flags: `--force` (overwrite), `--no-npm` (skip Node step), `--no-user`
+  (skip admin user creation).
+- Stubs at `meta/admin-core/stubs/` let consumers see the default
+  scaffolding and override per-site before `:install` by copying over.
+
+
 ## [0.12.2] — 2026-04-18
 
 ### Changed

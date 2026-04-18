@@ -18,6 +18,13 @@ class AdminCoreServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Console commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \Meta\AdminCore\Console\Commands\InstallCommand::class,
+            ]);
+        }
+
         // Inertia middleware — consumer apps must include it themselves.
         // Published so they can customise it.
 

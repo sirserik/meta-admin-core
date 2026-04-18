@@ -59,15 +59,37 @@ No `ArticleController`. No `Articles/Index.vue`. No
 - **Inertia + Vue 3** — modern SPA admin over a Laravel backend
 - **Package-discoverable** — drop it in, boot, go
 
-## Installation (short version)
+## Installation — one command
+
+In a fresh or existing Laravel 11/12 app:
 
 ```bash
-composer require meta/admin-core:^0.3
-php artisan vendor:publish --tag=admin-core-config
+composer require meta/admin-core
+php artisan admin-core:install
 ```
 
-Then set up Vite, middleware, and an entry point. Full walkthrough:
-[docs/installation.md](docs/installation.md).
+That's it. The installer will:
+
+1. Publish `config/admin-core.php` + Inertia root view
+2. Scaffold `resources/js/admin-spa.js` + `resources/css/admin-spa.css`
+3. Register `HandleInertiaRequests` middleware in `bootstrap/app.php`
+4. Patch `vite.config.js` (adds `admin-spa.{js,css}` + `@admin-core` alias + `preserveSymlinks`)
+5. Run migrations
+6. Create an admin user (`admin@example.com` / `password`)
+7. Install npm deps + run `npm run build`
+
+Then open `http://your-site/admin` and log in. Start registering resources in `AppServiceProvider::boot()`:
+
+```php
+use Meta\AdminCore\Facades\AdminCore;
+
+AdminCore::resource('articles', [
+    'model' => \App\Models\Article::class,
+    // ...
+]);
+```
+
+Full setup options: `php artisan admin-core:install --help`. See also [docs/installation.md](docs/installation.md) for the long-form walkthrough.
 
 Register middleware in `bootstrap/app.php`:
 
