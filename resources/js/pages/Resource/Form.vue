@@ -21,6 +21,19 @@ const props = defineProps({
 const primaryActions = computed(() => props.actions.filter(a => a.primary));
 const secondaryActions = computed(() => props.actions.filter(a => !a.primary));
 
+// Group attributes by `group` key. Ungrouped ones land in "Атрибуты".
+// Preserves declaration order per group. Group icon: first attribute's
+// `group_icon` wins (optional — for the small icon next to the heading).
+const attributeGroups = computed(() => {
+    const groups = new Map();
+    for (const a of props.attributes) {
+        const g = a.group || 'Атрибуты';
+        if (!groups.has(g)) groups.set(g, { label: g, icon: a.group_icon || null, items: [] });
+        groups.get(g).items.push(a);
+    }
+    return Array.from(groups.values());
+});
+
 const activeLocale = ref('ru');
 
 const initial = () => {
@@ -138,9 +151,13 @@ function submit() {
                     </button>
                 </div>
 
-                <div v-if="attributes.length" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
-                    <h3 class="font-semibold text-gray-900 dark:text-white">Атрибуты</h3>
-                    <SimpleField v-for="a in attributes" :key="a.name"
+                <div v-for="g in attributeGroups" :key="g.label"
+                    class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+                    <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i v-if="g.icon" class="fas text-gray-400" :class="g.icon"></i>
+                        {{ g.label }}
+                    </h3>
+                    <SimpleField v-for="a in g.items" :key="a.name"
                         :name="a.name"
                         :type="a.type"
                         :label="a.label"

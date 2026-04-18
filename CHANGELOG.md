@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-04-18
+
+### Added
+- **`group` on attributes** — declare logical groups and each one
+  renders as its own card in the form sidebar, with an optional icon
+  in the heading. Solves the "sidebar is a 13-field vertical column"
+  problem on resources like Schools and Teachers.
+  ```php
+  ['name' => 'dean_email', 'type' => 'email', 'label' => 'Email',
+    'group' => 'Декан', 'group_icon' => 'fa-user-tie'],
+  ['name' => 'dean_office','type' => 'text',  'label' => 'Кабинет',
+    'group' => 'Декан'],
+  ```
+- Attributes without `group` land in a default "Атрибуты" card (old
+  behaviour preserved).
+- `group_icon` on the first attribute of each group shows next to the
+  heading.
+
+
 ## [0.9.0] — 2026-04-18
 
 ### Added
