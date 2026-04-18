@@ -52,6 +52,13 @@ class AdminCore
         // attributes — плоские (non-translatable) поля формы, рендерятся в
         // сайдбаре через SimpleField: text/url/email/number/date/select/boolean/color
         $config['attributes']    = $config['attributes']    ?? [];
+        // actions — extra buttons/banners on the edit form. Each entry:
+        //   ['label' => '…', 'icon' => 'fa-…', 'url' => fn ($item) => '...',
+        //    'description' => '…' (optional), 'primary' => bool (optional)]
+        // `primary` => true renders as a prominent banner at the top of the
+        // form (useful for "edit related resource" CTAs). Otherwise renders
+        // as a small button next to "Back to list" in the header.
+        $config['actions']       = $config['actions']       ?? [];
         $config['image_field']   = $config['image_field']   ?? null;
         $config['route_key']     = $config['route_key']     ?? null; // null = use model default
         $config['per_page']      = $config['per_page']      ?? 15;

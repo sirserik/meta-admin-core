@@ -271,3 +271,42 @@ AdminCore::resource('teachers', [
     ],
 ]);
 ```
+
+
+### Actions (extra CTAs on the edit form)
+
+When a resource's real content lives somewhere else (e.g. Page records
+are metadata but the actual blocks live in a different resource), declare
+`actions` to render a prominent CTA button or banner on the edit form.
+This ships in the package — every site using `AdminCore::resource()`
+gets the same look for the same config.
+
+```php
+AdminCore::resource('pages', [
+    // ...
+    'actions' => [
+        [
+            'label'       => 'Редактировать блоки страницы',
+            'icon'        => 'fa-cubes',
+            'description' => 'Визуальное содержимое собирается из блоков.',
+            'primary'     => true,   // renders as banner at top
+            'url'         => fn ($item) => '/admin/blocks?page=' . $item->page_key,
+        ],
+    ],
+]);
+```
+
+Keys per action:
+
+| Key           | Type              | Purpose                                        |
+|---------------|-------------------|------------------------------------------------|
+| `label`       | string            | Button/banner text                             |
+| `icon`        | string            | FontAwesome class (e.g. `fa-cubes`)            |
+| `url`         | string \| closure | The link. Closure receives `$item` Eloquent.   |
+| `description` | string (optional) | Subtitle under the label (banner only)         |
+| `primary`     | bool              | `true` → banner at top; `false` → small button |
+
+Closure URLs are evaluated per-request. They receive the current model
+on edit screens, and `null` on the create screen — actions whose
+closure returns `null` on create are skipped.
+

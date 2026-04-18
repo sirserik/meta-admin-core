@@ -11,11 +11,15 @@ const props = defineProps({
     item: Object,
     fields:     { type: Array, default: () => [] },   // translatable main fields
     attributes: { type: Array, default: () => [] },   // plain sidebar attributes
+    actions:    { type: Array, default: () => [] },   // extra CTA buttons/banners
     locales:    { type: Array, default: () => ['ru','kk','en'] },
     image_field: { type: String, default: null },
     resource: String,
     is_edit: Boolean,
 });
+
+const primaryActions = computed(() => props.actions.filter(a => a.primary));
+const secondaryActions = computed(() => props.actions.filter(a => !a.primary));
 
 const activeLocale = ref('ru');
 
@@ -75,11 +79,37 @@ function submit() {
     <Head :title="title" />
     <PageHeader :title="title">
         <template #actions>
+            <!-- Secondary actions (small buttons in header) -->
+            <a v-for="a in secondaryActions" :key="a.url" :href="a.url"
+                class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm">
+                <i class="fas" :class="a.icon"></i><span>{{ a.label }}</span>
+            </a>
             <Link :href="`/admin/${resource}`" class="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm">
                 <i class="fas fa-arrow-left"></i><span>К списку</span>
             </Link>
         </template>
     </PageHeader>
+
+    <!-- Primary action banner(s) — big CTA for "edit related resource" flows -->
+    <div v-for="a in primaryActions" :key="a.url"
+        class="mb-6 rounded-xl border border-red-200 dark:border-red-900/50 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-5">
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-red-600 text-white flex items-center justify-center flex-shrink-0">
+                    <i class="fas text-lg" :class="a.icon"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">{{ a.label }}</h3>
+                    <p v-if="a.description" class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{{ a.description }}</p>
+                </div>
+            </div>
+            <a :href="a.url"
+                class="flex-shrink-0 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm">
+                <span>Открыть</span>
+                <i class="fas fa-arrow-right text-xs"></i>
+            </a>
+        </div>
+    </div>
 
     <form @submit.prevent="submit" class="space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

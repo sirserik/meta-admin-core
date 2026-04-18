@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-04-18
+
+### Added
+- **`actions` config key on resources.** Declare extra CTAs (buttons or
+  banner) on the edit form so the same look ships from the package for
+  every site. Use case: "Edit blocks" button on Pages resource — the
+  real content lives in another resource, and every site using the
+  package now gets the same prominent banner without writing Vue code
+  per-site.
+- Resource config entry shape: `['label', 'icon', 'url' (string |
+  closure), 'description', 'primary']`. Closure URLs are resolved
+  per-request with the current Eloquent model.
+- `Resource/Form.vue` renders `primary => true` actions as a gradient
+  banner at the top of the form, and non-primary ones as small buttons
+  in the header next to "К списку".
+- Docs: new "Actions" section in `docs/resources.md`.
+
+
 ## [0.3.5] — 2026-04-18
 
 ### Fixed

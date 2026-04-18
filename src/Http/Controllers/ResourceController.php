@@ -64,6 +64,7 @@ class ResourceController extends Controller
             'item'        => null,
             'fields'      => $config['fields'],
             'attributes'  => $this->resolveAttributeOptions($config['attributes']),
+            'actions'     => $this->resolveActions($config['actions'], null),
             'locales'     => self::LOCALES,
             'resource'    => $config['name'],
             'image_field' => $config['image_field'],
@@ -82,6 +83,7 @@ class ResourceController extends Controller
             'item'        => $this->presentForm($m, $config),
             'fields'      => $config['fields'],
             'attributes'  => $this->resolveAttributeOptions($config['attributes']),
+            'actions'     => $this->resolveActions($config['actions'], $m),
             'locales'     => self::LOCALES,
             'resource'    => $config['name'],
             'image_field' => $config['image_field'],
@@ -103,6 +105,37 @@ class ResourceController extends Controller
             }
             return $a;
         }, $attributes);
+    }
+
+    /**
+     * Resolve action `url` closures (which may depend on the current
+     * model) into plain strings before passing to Vue.
+     *
+     * Each action entry: ['label', 'icon', 'url', 'description', 'primary'].
+     * Actions whose closure-url throws or returns null are dropped.
+     */
+    protected function resolveActions(array $actions, ?Model $item): array
+    {
+        $out = [];
+        foreach ($actions as $a) {
+            $url = $a['url'] ?? null;
+            if (is_callable($url)) {
+                try {
+                    $url = $item ? $url($item) : null;
+                } catch (\Throwable) {
+                    $url = null;
+                }
+            }
+            if (!$url) continue; // skip actions that have no URL yet (e.g. create screen)
+            $out[] = [
+                'label'       => $a['label'] ?? '',
+                'icon'        => $a['icon'] ?? 'fa-link',
+                'url'         => $url,
+                'description' => $a['description'] ?? null,
+                'primary'     => (bool) ($a['primary'] ?? false),
+            ];
+        }
+        return $out;
     }
 
     public function store(Request $request, string $resource = ''): RedirectResponse
