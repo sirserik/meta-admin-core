@@ -4,6 +4,7 @@ namespace Meta\AdminCore\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Meta\AdminCore\Concerns\Publishable;
 use Meta\AdminCore\Concerns\Translatable;
 
 /**
@@ -18,7 +19,7 @@ use Meta\AdminCore\Concerns\Translatable;
  */
 class PageBlock extends Model
 {
-    use Translatable;
+    use Publishable, Translatable;
 
     protected $table = 'page_blocks';
 
@@ -27,6 +28,7 @@ class PageBlock extends Model
         'title', 'subtitle', 'content',
         'data', 'settings',
         'is_active', 'status', 'published_at',
+        'publish_at', 'unpublish_at',
         'sort_order',
     ];
 
@@ -59,7 +61,8 @@ class PageBlock extends Model
     /* === SCOPES === */
 
     public function scopeActive($query)    { return $query->where('is_active', true); }
-    public function scopePublished($query) { return $query->where('status', 'published'); }
+    // scopePublished / scopeScheduled / scopeDuePublish / scopeDueUnpublish
+    // come from the Publishable trait and honour publish_at/unpublish_at.
     public function scopeDraft($query)     { return $query->where('status', 'draft'); }
     public function scopeForPage($query, string $pageName)
     {
@@ -67,7 +70,7 @@ class PageBlock extends Model
     }
 
     public function isDraft(): bool     { return $this->status === 'draft'; }
-    public function isPublished(): bool { return $this->status === 'published'; }
+    // isPublished() comes from the Publishable trait.
 
     public function publish(): void
     {

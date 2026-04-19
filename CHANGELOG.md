@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.30.1] — 2026-04-19
+
+### Changed
+- **`PageBlock` opts into `Publishable`** out of the box. Its
+  `scopePublished` now honours `publish_at` / `unpublish_at`
+  timestamps, and the bundled ticker command picks it up once the
+  consumer adds the migration and calls
+  `AdminCore::schedulable(PageBlock::class)`. `publish_at` and
+  `unpublish_at` are added to `$fillable`.
+
 ## [0.30.0] — 2026-04-19
 
 ### Added
