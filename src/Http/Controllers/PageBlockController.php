@@ -97,16 +97,18 @@ class PageBlockController extends Controller
         return Inertia::render('Blocks/Form', [
             'title' => 'Новый блок',
             'item'  => [
-                'page_name'  => $request->query('page', ''),
-                'block_type' => 'content',
-                'is_active'  => true,
-                'status'     => 'draft',
-                'sort_order' => 0,
-                'title'      => ['ru' => '', 'kk' => '', 'en' => ''],
-                'subtitle'   => ['ru' => '', 'kk' => '', 'en' => ''],
-                'content'    => ['ru' => '', 'kk' => '', 'en' => ''],
-                'data'       => '{}',
-                'settings'   => '{}',
+                'page_name'    => $request->query('page', ''),
+                'block_type'   => 'content',
+                'is_active'    => true,
+                'status'       => 'draft',
+                'sort_order'   => 0,
+                'publish_at'   => '',
+                'unpublish_at' => '',
+                'title'        => ['ru' => '', 'kk' => '', 'en' => ''],
+                'subtitle'     => ['ru' => '', 'kk' => '', 'en' => ''],
+                'content'      => ['ru' => '', 'kk' => '', 'en' => ''],
+                'data'         => '{}',
+                'settings'     => '{}',
             ],
             'pagesGrouped'       => $this->catalog->pagesGrouped(),
             'typesByCategory'    => $this->catalog->blockTypesGrouped(),
@@ -145,17 +147,19 @@ class PageBlockController extends Controller
         }
 
         $block = PageBlock::create([
-            'page_name'  => $data['page_name'],
-            'block_key'  => $data['block_key'],
-            'block_type' => $data['block_type'],
-            'is_active'  => $request->boolean('is_active', true),
-            'status'     => $data['status'] ?? 'draft',
-            'sort_order' => $data['sort_order'] ?? 0,
-            'title'      => $data['title']['ru']    ?? null,
-            'subtitle'   => $data['subtitle']['ru'] ?? null,
-            'content'    => $data['content']['ru']  ?? null,
-            'data'       => $this->decodeJson($data['data']     ?? null),
-            'settings'   => $this->decodeJson($data['settings'] ?? null),
+            'page_name'    => $data['page_name'],
+            'block_key'    => $data['block_key'],
+            'block_type'   => $data['block_type'],
+            'is_active'    => $request->boolean('is_active', true),
+            'status'       => $data['status'] ?? 'draft',
+            'sort_order'   => $data['sort_order'] ?? 0,
+            'publish_at'   => $data['publish_at']   ?: null,
+            'unpublish_at' => $data['unpublish_at'] ?: null,
+            'title'        => $data['title']['ru']    ?? null,
+            'subtitle'     => $data['subtitle']['ru'] ?? null,
+            'content'      => $data['content']['ru']  ?? null,
+            'data'         => $this->decodeJson($data['data']     ?? null),
+            'settings'     => $this->decodeJson($data['settings'] ?? null),
         ]);
         $this->persistTranslations($block, $data);
 
@@ -170,17 +174,19 @@ class PageBlockController extends Controller
         $data = $this->validated($request, $block);
 
         $block->update([
-            'page_name'  => $data['page_name'],
-            'block_key'  => $data['block_key'],
-            'block_type' => $data['block_type'],
-            'is_active'  => $request->boolean('is_active'),
-            'status'     => $data['status'] ?? $block->status,
-            'sort_order' => $data['sort_order'] ?? $block->sort_order,
-            'title'      => $data['title']['ru']    ?? $block->title,
-            'subtitle'   => $data['subtitle']['ru'] ?? $block->subtitle,
-            'content'    => $data['content']['ru']  ?? $block->content,
-            'data'       => $this->decodeJson($data['data']     ?? null),
-            'settings'   => $this->decodeJson($data['settings'] ?? null),
+            'page_name'    => $data['page_name'],
+            'block_key'    => $data['block_key'],
+            'block_type'   => $data['block_type'],
+            'is_active'    => $request->boolean('is_active'),
+            'status'       => $data['status'] ?? $block->status,
+            'sort_order'   => $data['sort_order'] ?? $block->sort_order,
+            'publish_at'   => array_key_exists('publish_at',   $data) ? ($data['publish_at']   ?: null) : $block->publish_at,
+            'unpublish_at' => array_key_exists('unpublish_at', $data) ? ($data['unpublish_at'] ?: null) : $block->unpublish_at,
+            'title'        => $data['title']['ru']    ?? $block->title,
+            'subtitle'     => $data['subtitle']['ru'] ?? $block->subtitle,
+            'content'      => $data['content']['ru']  ?? $block->content,
+            'data'         => $this->decodeJson($data['data']     ?? null),
+            'settings'     => $this->decodeJson($data['settings'] ?? null),
         ]);
         $this->persistTranslations($block, $data);
 
@@ -319,14 +325,16 @@ class PageBlockController extends Controller
     protected function validated(Request $request, ?PageBlock $existing = null): array
     {
         $rules = [
-            'page_name'  => 'required|string|max:100',
-            'block_key'  => 'nullable|string|max:100',
-            'block_type' => 'required|string|max:100',
-            'sort_order' => 'nullable|integer',
-            'is_active'  => 'nullable|boolean',
-            'status'     => 'nullable|in:draft,published,archived',
-            'data'       => 'nullable|string',
-            'settings'   => 'nullable|string',
+            'page_name'    => 'required|string|max:100',
+            'block_key'    => 'nullable|string|max:100',
+            'block_type'   => 'required|string|max:100',
+            'sort_order'   => 'nullable|integer',
+            'is_active'    => 'nullable|boolean',
+            'status'       => 'nullable|in:draft,published,archived',
+            'publish_at'   => 'nullable|date',
+            'unpublish_at' => 'nullable|date|after:publish_at',
+            'data'         => 'nullable|string',
+            'settings'     => 'nullable|string',
         ];
         foreach (self::TRANSLATABLE as $field) {
             foreach (self::LOCALES as $locale) {
@@ -394,17 +402,21 @@ class PageBlockController extends Controller
         }
 
         return array_merge($translations, [
-            'id'         => $b->id,
-            'page_name'  => $b->page_name,
-            'block_key'  => $b->block_key,
-            'block_type' => $b->block_type,
-            'is_active'  => (bool) $b->is_active,
-            'status'     => $b->status,
-            'sort_order' => $b->sort_order,
-            'data'       => $b->data     !== null ? json_encode($b->data,     JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}',
-            'settings'   => $b->settings !== null ? json_encode($b->settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}',
-            'created_at' => optional($b->created_at)->format('d.m.Y H:i'),
-            'updated_at' => optional($b->updated_at)->format('d.m.Y H:i'),
+            'id'           => $b->id,
+            'page_name'    => $b->page_name,
+            'block_key'    => $b->block_key,
+            'block_type'   => $b->block_type,
+            'is_active'    => (bool) $b->is_active,
+            'status'       => $b->status,
+            'sort_order'   => $b->sort_order,
+            // HTML <input type="datetime-local"> expects 'Y-m-d\TH:i'
+            // (no seconds, no timezone).
+            'publish_at'   => optional($b->publish_at)->format('Y-m-d\TH:i'),
+            'unpublish_at' => optional($b->unpublish_at)->format('Y-m-d\TH:i'),
+            'data'         => $b->data     !== null ? json_encode($b->data,     JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}',
+            'settings'     => $b->settings !== null ? json_encode($b->settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}',
+            'created_at'   => optional($b->created_at)->format('d.m.Y H:i'),
+            'updated_at'   => optional($b->updated_at)->format('d.m.Y H:i'),
         ]);
     }
 }

@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.31.0] — 2026-04-19
+
+### Added
+- **Admin form UI for scheduled publishing.** `Blocks/Form.vue`
+  gains two `datetime-local` inputs — «Опубликовать в» and
+  «Снять с публикации в» — inside the Публикация card. Empty =
+  behave as before (publish immediately, never auto-unpublish).
+- `PageBlockController::validated()` accepts `publish_at` /
+  `unpublish_at` (`date` + `after:publish_at`), `store()` and
+  `update()` persist them, `presentForm()` formats them as
+  `Y-m-d\TH:i` for the native datetime input.
+
 ## [0.30.1] — 2026-04-19
 
 ### Changed

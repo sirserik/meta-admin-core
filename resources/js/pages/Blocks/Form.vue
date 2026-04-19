@@ -36,6 +36,8 @@ const form = useForm({
     sort_order:   props.item.sort_order ?? 0,
     is_active:    props.item.is_active  ?? true,
     status:       props.item.status     ?? 'draft',
+    publish_at:   props.item.publish_at   ?? '',
+    unpublish_at: props.item.unpublish_at ?? '',
     title:        { ...props.item.title },
     subtitle:     { ...props.item.subtitle },
     content:      { ...props.item.content },
@@ -242,6 +244,31 @@ function onPickerOpen() {
                         <input v-model="form.is_active" type="checkbox" class="w-5 h-5 rounded text-red-600">
                         <span class="text-sm text-gray-700 dark:text-gray-300">Активен (показывается на сайте)</span>
                     </label>
+
+                    <div class="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Опубликовать в
+                                <span class="text-xs font-normal text-gray-500">(оставь пустым для «сразу»)</span>
+                            </label>
+                            <input v-model="form.publish_at" type="datetime-local"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm">
+                            <p v-if="form.errors.publish_at" class="mt-1 text-xs text-red-500">{{ form.errors.publish_at }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Снять с публикации в
+                                <span class="text-xs font-normal text-gray-500">(опционально)</span>
+                            </label>
+                            <input v-model="form.unpublish_at" type="datetime-local"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm">
+                            <p v-if="form.errors.unpublish_at" class="mt-1 text-xs text-red-500">{{ form.errors.unpublish_at }}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 leading-relaxed">
+                            Статус переключается автоматически, когда наступает указанное время. Требуется запущенный Laravel-scheduler или cron на <code>admin-core:apply-schedule</code>.
+                        </p>
+                    </div>
+
                     <button type="submit" :disabled="form.processing" class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium">
                         <i class="fas" :class="form.processing ? 'fa-spinner fa-spin' : 'fa-save'"></i>
                         {{ isEdit ? 'Сохранить' : 'Создать' }}
