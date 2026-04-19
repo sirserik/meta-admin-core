@@ -76,6 +76,11 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     // Admin audit log
     Route::get('/activity',          [\Meta\AdminCore\Http\Controllers\ActivityController::class, 'index'])->name('activity.index');
 
+    // Permissions matrix (role × resource × action). Gracefully 404s
+    // if spatie/laravel-permission is not installed in the consumer.
+    Route::get('/permissions',       [\Meta\AdminCore\Http\Controllers\PermissionsController::class, 'index'])->name('permissions.index');
+    Route::put('/permissions',       [\Meta\AdminCore\Http\Controllers\PermissionsController::class, 'update'])->name('permissions.update');
+
     // Revision history for the built-in PageBlock (registered under
     // the dedicated 'blocks' controller, not the generic resource
     // registry).

@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.34.0] — 2026-04-19
+
+### Added
+- **Permissions matrix UI** at `/admin/permissions`. Role × resource ×
+  action grid — per-cell checkboxes, per-row and per-column bulk
+  toggles, dirty-aware save per role. Auto-creates the
+  `{resource}.{action}` permissions for every registered resource on
+  first load (idempotent) so the matrix is always full. Permissions
+  that live outside the matrix (ad-hoc custom ones) are preserved on
+  save rather than wiped.
+  Hard-depends on `spatie/laravel-permission`; 404s gracefully and
+  the sidebar item is hidden when the package isn't installed.
+
+  Actions covered out of the box: `view`, `create`, `update`,
+  `delete`, `publish`. Consumers extend the list by overriding
+  `PermissionsController::ACTIONS` or wrapping the controller.
+
 ## [0.33.0] — 2026-04-19
 
 ### Added
