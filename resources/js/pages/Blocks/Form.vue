@@ -5,6 +5,7 @@ import PageHeader from '@admin-core/components/PageHeader.vue';
 import LocaleTabs from '@admin-core/components/LocaleTabs.vue';
 import TranslatableField from '@admin-core/components/TranslatableField.vue';
 import BlockDataEditor from '@admin-core/components/BlockDataEditor.vue';
+import { useDraftAutosave } from '@admin-core/composables/useDraftAutosave.js';
 
 const props = defineProps({
     title: String,
@@ -49,6 +50,27 @@ form.transform((d) => ({
     data:     d.blockData,
     settings: d.blockSettings,
 }));
+
+// Debounced localStorage autosave. Key is stable per block so switching
+// between edits of different blocks keeps separate drafts. For a brand-
+// new block ("create" form), falls back to a nonce so multiple open
+// tabs don't step on each other.
+const draftKey = `block:${props.item.id ?? 'new-' + (props.item.page_name || 'unassigned')}`;
+const {
+    savedAt: draftSavedAt,
+    restorePrompt,
+    discard: discardDraft,
+    acceptRestore,
+    declineRestore,
+} = useDraftAutosave(form, {
+    key: draftKey,
+    reference_updated_at: props.item.updated_at ?? null,
+    debounce: 1500,
+});
+const draftSavedLabel = computed(() => {
+    if (!draftSavedAt.value) return '';
+    try { return new Date(draftSavedAt.value).toLocaleTimeString(); } catch { return ''; }
+});
 
 const dataError = ref('');
 const settingsError = ref('');
@@ -180,6 +202,26 @@ function onPickerOpen() {
     </PageHeader>
 
     <form @submit.prevent="submit" class="space-y-6">
+        <!-- Draft-restore prompt: shown once on mount if localStorage
+             holds a newer unsaved version than what's in the DB. -->
+        <div v-if="restorePrompt"
+             class="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/40 rounded-lg px-4 py-3">
+            <i class="fas fa-clock-rotate-left text-amber-600 dark:text-amber-300"></i>
+            <div class="flex-1 text-sm text-amber-900 dark:text-amber-200">
+                У вас есть несохранённая версия от
+                <strong>{{ new Date(restorePrompt.savedAt).toLocaleString() }}</strong>.
+                Восстановить?
+            </div>
+            <button type="button" @click="acceptRestore"
+                    class="px-3 py-1.5 text-sm rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium">
+                Восстановить
+            </button>
+            <button type="button" @click="declineRestore"
+                    class="px-3 py-1.5 text-sm rounded-md border border-amber-400 dark:border-amber-600 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50">
+                Отбросить
+            </button>
+        </div>
+
         <div class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700">
             <button v-for="(t, val) in { content: 'Контент', data: 'Данные', settings: 'Настройки' }"
                 :key="val" type="button" @click="activeTab = val"
@@ -279,6 +321,12 @@ function onPickerOpen() {
                         <i class="fas fa-clock-rotate-left"></i>
                         История изменений
                     </a>
+
+                    <p v-if="draftSavedLabel"
+                       class="flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-circle-check text-green-500"></i>
+                        черновик автосохранён в {{ draftSavedLabel }}
+                    </p>
                 </div>
 
                 <!-- Visual type picker trigger -->

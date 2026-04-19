@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.38.0] — 2026-04-19
+
+### Added
+- **Draft autosave.** New `useDraftAutosave(form, { key })` Vue
+  composable debounce-saves any Inertia `useForm` instance into
+  `localStorage` on every change. When the same form mounts again
+  and the stored blob is newer than the record's last save, a
+  banner offers to restore. Submitting successfully wipes the draft.
+
+  Wired into `Blocks/Form.vue` by default — editors now get a
+  «Несохранённая версия от HH:MM — Восстановить / Отбросить»
+  prompt if a browser crash, tab close, or distracted copy-paste
+  leaves them mid-edit.
+
+  Purely client-side: no DB table, no per-user identity. Per-editor
+  per-browser, which matches 95% of real crash-recovery flows.
+  Consumers can opt their own forms in by calling the composable
+  with a stable `key` per record.
+
 ## [0.37.0] — 2026-04-19
 
 ### Added
