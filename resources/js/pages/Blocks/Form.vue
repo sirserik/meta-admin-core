@@ -72,6 +72,30 @@ const draftSavedLabel = computed(() => {
     try { return new Date(draftSavedAt.value).toLocaleTimeString(); } catch { return ''; }
 });
 
+// ---------- Live preview ----------
+// Split-screen iframe pointing at the public page. State persists in
+// localStorage so editors keep the same layout across sessions.
+const previewEnabled = ref(false);
+try { previewEnabled.value = localStorage.getItem('admin-core:preview-split') === '1'; } catch {}
+watch(previewEnabled, (v) => { try { localStorage.setItem('admin-core:preview-split', v ? '1' : '0'); } catch {} });
+
+const previewIframe = ref(null);
+const previewUrl = computed(() => {
+    const page = form.page_name || props.item.page_name;
+    if (!page || page === 'header' || page === 'footer' || page === 'menu') return '';
+    // home → '/', anything else → '/{slug}'. Add cache-buster on save.
+    const base = page === 'home' ? '/' : ('/' + page);
+    return base + '?_preview=' + (previewBuster.value || 0);
+});
+const previewBuster = ref(0);
+
+// Refresh the iframe when a save succeeds — that way preview always
+// mirrors what's in the DB. Per-keystroke re-render would require
+// client-side rendering of blocks, which isn't practical for a
+// generic package (consumer Blade templates are the source of truth).
+watch(() => form.wasSuccessful, (ok) => { if (ok) previewBuster.value = Date.now(); });
+function refreshPreview() { previewBuster.value = Date.now(); }
+
 const dataError = ref('');
 const settingsError = ref('');
 
@@ -231,6 +255,36 @@ function onPickerOpen() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-200'">
                 {{ t }}
             </button>
+            <button v-if="isEdit && previewUrl" type="button" @click="previewEnabled = !previewEnabled"
+                class="ml-auto px-3 py-1.5 text-xs rounded-md font-medium inline-flex items-center gap-2"
+                :class="previewEnabled
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                <i class="fas fa-eye"></i>
+                {{ previewEnabled ? 'Скрыть предпросмотр' : 'Предпросмотр' }}
+            </button>
+        </div>
+
+        <!-- Live preview sidebar (iframe). Refreshes on save; consumer
+             Blade is the source of truth so no client-side render. -->
+        <div v-if="previewEnabled && previewUrl"
+             class="sticky top-16 z-10 -mx-4 lg:mx-0 lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-4">
+            <div class="hidden lg:block"></div>
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                    <i class="fas fa-globe text-gray-400 text-xs"></i>
+                    <code class="flex-1 text-xs text-gray-600 dark:text-gray-400 truncate font-mono">{{ previewUrl }}</code>
+                    <button type="button" @click="refreshPreview" title="Обновить"
+                            class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                        <i class="fas fa-rotate"></i>
+                    </button>
+                    <a :href="previewUrl" target="_blank" rel="noopener" title="Открыть в новой вкладке"
+                       class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                        <i class="fas fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+                <iframe ref="previewIframe" :src="previewUrl" class="w-full bg-white" style="height: 70vh;"></iframe>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.42.0] — 2026-04-19
+
+### Added
+- **Live preview split.** The block edit form gets a «Предпросмотр»
+  toggle in the tab bar. Turning it on pins a sidebar iframe that
+  points at the public page the block belongs to
+  (`/` for `home`, `/{slug}` otherwise). On every successful save the
+  iframe refreshes — editors see their change in real context
+  without leaving the admin. State persists in localStorage so the
+  layout survives page reloads. Manual «обновить» + «открыть в
+  новой вкладке» buttons sit next to the URL bar.
+
+  Consumer Blade templates remain the source of truth — per-keystroke
+  client-side rendering would require re-implementing every block
+  template in Vue, which is specifically what this package avoids.
+
 ## [0.41.0] — 2026-04-19
 
 ### Added
