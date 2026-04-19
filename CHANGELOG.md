@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.40.0] — 2026-04-19
+
+### Added
+- **Taxonomies.** Polymorphic tag / category system so any model can
+  be tagged without per-resource pivots.
+  - `taxonomy_terms` — the vocabulary (type/slug/label, optional
+    per-locale labels, sort order).
+  - `taxonomy_term_model` — morph pivot.
+  - `Meta\AdminCore\Concerns\Taxable` — opt-in trait. Provides
+    `terms()` relation, `termsOfType($t)`, `syncTerms($type, $slugs)`
+    (auto-creates missing terms on the fly), and
+    `withTerm/withAnyTerm` query scopes.
+  - `/admin/taxonomies` CRUD UI, one screen per vocabulary. Create
+    new vocabularies inline by typing a new `type` name.
+  - **Content API picks them up automatically.**
+    `/api/content/articles?tag=interview,opinion` or `?category=admissions`
+    filter the list (only when the model uses `Taxable`). Attached
+    terms are serialized into each record under a `terms` key grouped
+    by vocabulary: `{terms: {tag: [{slug,label}], category: […]}}`.
+
 ## [0.39.0] — 2026-04-19
 
 ### Added

@@ -81,6 +81,12 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::get('/permissions',       [\Meta\AdminCore\Http\Controllers\PermissionsController::class, 'index'])->name('permissions.index');
     Route::put('/permissions',       [\Meta\AdminCore\Http\Controllers\PermissionsController::class, 'update'])->name('permissions.update');
 
+    // Taxonomies — vocabularies (tag/category/…) + term CRUD.
+    Route::get(   '/taxonomies',          [\Meta\AdminCore\Http\Controllers\TaxonomyController::class, 'index'])->name('taxonomies.index');
+    Route::post(  '/taxonomies',          [\Meta\AdminCore\Http\Controllers\TaxonomyController::class, 'store'])->name('taxonomies.store');
+    Route::put(   '/taxonomies/{id}',     [\Meta\AdminCore\Http\Controllers\TaxonomyController::class, 'update'])->name('taxonomies.update');
+    Route::delete('/taxonomies/{id}',     [\Meta\AdminCore\Http\Controllers\TaxonomyController::class, 'destroy'])->name('taxonomies.destroy');
+
     // Webhooks CRUD + manual test-fire.
     Route::get(   '/webhooks',            [\Meta\AdminCore\Http\Controllers\WebhooksController::class, 'index'])->name('webhooks.index');
     Route::post(  '/webhooks',            [\Meta\AdminCore\Http\Controllers\WebhooksController::class, 'store'])->name('webhooks.store');

@@ -69,6 +69,18 @@ class ContentApiController extends Controller
             $query->where('is_published', true);
         }
 
+        // Optional taxonomy filters — only apply when the model uses Taxable.
+        if (in_array(\Meta\AdminCore\Concerns\Taxable::class, class_uses_recursive($model) ?: [], true)) {
+            // /api/content/articles?tag=interview,opinion
+            if ($tags = $request->query('tag')) {
+                $slugs = is_array($tags) ? $tags : explode(',', (string) $tags);
+                $query->withAnyTerm('tag', array_filter(array_map('trim', $slugs)));
+            }
+            if ($cat = $request->query('category')) {
+                $query->withTerm('category', (string) $cat);
+            }
+        }
+
         $paginator = $query->paginate($perPage);
 
         return response()->json([
@@ -151,6 +163,24 @@ class ContentApiController extends Controller
                 if ($val !== null) $attrs[$f] = $val;
             }
         }
+
+        // Surface attached taxonomy terms grouped by vocabulary — only
+        // loaded for models that use Taxable (otherwise ->terms won't
+        // resolve). Keeps the API shape: {terms: {tag: […], category: […]}}
+        if (method_exists($record, 'terms')) {
+            $terms = $record->terms;
+            if ($terms) {
+                $grouped = [];
+                foreach ($terms as $t) {
+                    $grouped[$t->type][] = [
+                        'slug'  => $t->slug,
+                        'label' => method_exists($t, 'localizedLabel') ? $t->localizedLabel($locale) : $t->label,
+                    ];
+                }
+                $attrs['terms'] = $grouped;
+            }
+        }
+
         return $attrs;
     }
 }
