@@ -76,6 +76,26 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     // Admin audit log
     Route::get('/activity',          [\Meta\AdminCore\Http\Controllers\ActivityController::class, 'index'])->name('activity.index');
 
+    // Revision history for the built-in PageBlock (registered under
+    // the dedicated 'blocks' controller, not the generic resource
+    // registry).
+    Route::get('/blocks/{id}/revisions',
+        [\Meta\AdminCore\Http\Controllers\RevisionController::class, 'indexForPageBlock'])
+        ->name('blocks.revisions.index');
+    Route::post('/blocks/{id}/revisions/{revisionId}/restore',
+        [\Meta\AdminCore\Http\Controllers\RevisionController::class, 'restoreForPageBlock'])
+        ->name('blocks.revisions.restore');
+
+    // Revision history — per-resource list + restore. Resource name
+    // matches AdminCore::resource() registry key. Registered after
+    // the built-in /blocks/* routes so those win on exact match.
+    Route::get('/{resource}/{id}/revisions',
+        [\Meta\AdminCore\Http\Controllers\RevisionController::class, 'index'])
+        ->name('revisions.index');
+    Route::post('/{resource}/{id}/revisions/{revisionId}/restore',
+        [\Meta\AdminCore\Http\Controllers\RevisionController::class, 'restore'])
+        ->name('revisions.restore');
+
     // Cache management
     Route::get( '/cache',            [\Meta\AdminCore\Http\Controllers\CacheController::class, 'index'])->name('cache.index');
     Route::post('/cache/flush',      [\Meta\AdminCore\Http\Controllers\CacheController::class, 'flush'])->name('cache.flush');

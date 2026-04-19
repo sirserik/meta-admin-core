@@ -5,6 +5,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.32.0] — 2026-04-19
+
+### Added
+- **Revisions / version history.** Any model that adopts the
+  `Revisionable` trait auto-snapshots its attributes into a polymorphic
+  `revisions` table on every `updating` event, so editors get per-row
+  undo. Comes with:
+  - `Meta\AdminCore\Concerns\Revisionable` — trait with `revisions()`
+    relation and `restoreRevision($id)` method. Opt-out via
+    `$model::$revisionable = false` or a single-save `withoutRevision(fn
+    () => …)` helper. Optional `$maxRevisions` caps retention.
+  - `Meta\AdminCore\Models\Revision` — Eloquent model, immutable by
+    convention. Stores `revisionable_{type,id}`, `user_id` (the editor
+    at time of change), `data` JSON (pre-update snapshot), optional
+    `note`.
+  - `2026_04_19_000001_create_revisions_table` migration.
+  - `/admin/{resource}/{id}/revisions` list screen + restore POST.
+    Works for any resource registered via `AdminCore::resource()`.
+  - `/admin/blocks/{id}/revisions` — dedicated route for the built-in
+    PageBlock model, which lives outside the generic resource registry.
+  - `resources/js/pages/Revisions/Index.vue` — Inertia page with
+    "Показать / Восстановить" actions per revision.
+
+### Changed
+- **`PageBlock` adopts `Revisionable`** out of the box. Every edit to
+  a block now leaves a trail; clicking «История изменений» in the
+  edit form jumps to the new screen.
+
 ## [0.31.0] — 2026-04-19
 
 ### Added

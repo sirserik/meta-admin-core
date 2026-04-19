@@ -5,6 +5,7 @@ namespace Meta\AdminCore\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Meta\AdminCore\Concerns\Publishable;
+use Meta\AdminCore\Concerns\Revisionable;
 use Meta\AdminCore\Concerns\Translatable;
 
 /**
@@ -19,7 +20,7 @@ use Meta\AdminCore\Concerns\Translatable;
  */
 class PageBlock extends Model
 {
-    use Publishable, Translatable;
+    use Publishable, Revisionable, Translatable;
 
     protected $table = 'page_blocks';
 

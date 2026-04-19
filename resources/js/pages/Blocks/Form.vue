@@ -273,6 +273,12 @@ function onPickerOpen() {
                         <i class="fas" :class="form.processing ? 'fa-spinner fa-spin' : 'fa-save'"></i>
                         {{ isEdit ? 'Сохранить' : 'Создать' }}
                     </button>
+
+                    <a v-if="isEdit" :href="`/admin/blocks/${item.id}/revisions`"
+                       class="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        История изменений
+                    </a>
                 </div>
 
                 <!-- Visual type picker trigger -->
