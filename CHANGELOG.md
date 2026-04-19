@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.41.0] — 2026-04-19
+
+### Added
+- **Form builder.** Editors compose forms in the admin, the public
+  site POSTs to the generated endpoint, submissions land in the DB.
+  - Tables: `forms` (name/slug/fields-JSON/notify-email/
+    success-message/is-active) and `form_submissions` (form_id/data/
+    ip/user-agent/status, one row per POST).
+  - `/admin/forms` — list + CRUD (Index.vue, Edit.vue).
+  - `/admin/forms/{id}/submissions` — inbox view, status badges
+    (new/read/replied/spam), inline status dropdown, CSV export.
+  - Public endpoint: `POST /api/forms/{slug}`. Validation rules are
+    derived from the fields schema (email→`email`, url→`url`,
+    select→`in:`, etc). Returns 201 with `{ok, id, message}` on
+    success so AJAX clients can show the configured thank-you text.
+  - `notify_email` setting fires a best-effort plain-text mail on
+    every submission (silently swallowed if the mail driver isn't
+    configured — editors should never get "form broken" due to SMTP).
+  - Supported field types: text, textarea, email, tel, url, number,
+    date, select, radio, checkbox. Field editor lets you reorder,
+    mark required, set placeholder/help, and — for select/radio —
+    paste newline-separated options in `value=label` format.
+
 ## [0.40.0] — 2026-04-19
 
 ### Added

@@ -42,6 +42,13 @@ Route::get('/sitemap.xml',
     [\Meta\AdminCore\Http\Controllers\SitemapController::class, 'index'],
 )->name('sitemap');
 
+// Public form submission endpoint (POST /api/forms/{slug}). Validates
+// the payload against the form's declared fields schema and stores a
+// submission row. Wrap with throttle middleware in the consumer.
+Route::post('/api/forms/{slug}',
+    [\Meta\AdminCore\Http\Controllers\FormSubmissionsController::class, 'submit'],
+)->where('slug', '[\w\-]+')->name('forms.submit');
+
 // Read-only Content API. Wrap the group middleware in your consumer
 // if you need auth/throttling; by default it's public.
 Route::prefix('api/content')->group(function () {

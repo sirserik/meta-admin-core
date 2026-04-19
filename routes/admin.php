@@ -81,6 +81,18 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::get('/permissions',       [\Meta\AdminCore\Http\Controllers\PermissionsController::class, 'index'])->name('permissions.index');
     Route::put('/permissions',       [\Meta\AdminCore\Http\Controllers\PermissionsController::class, 'update'])->name('permissions.update');
 
+    // Form builder: CRUD + submissions browser + CSV export.
+    Route::get(   '/forms',                         [\Meta\AdminCore\Http\Controllers\FormsController::class, 'index'])->name('forms.index');
+    Route::get(   '/forms/create',                  [\Meta\AdminCore\Http\Controllers\FormsController::class, 'create'])->name('forms.create');
+    Route::post(  '/forms',                         [\Meta\AdminCore\Http\Controllers\FormsController::class, 'store'])->name('forms.store');
+    Route::get(   '/forms/{id}/edit',               [\Meta\AdminCore\Http\Controllers\FormsController::class, 'edit'])->name('forms.edit');
+    Route::put(   '/forms/{id}',                    [\Meta\AdminCore\Http\Controllers\FormsController::class, 'update'])->name('forms.update');
+    Route::delete('/forms/{id}',                    [\Meta\AdminCore\Http\Controllers\FormsController::class, 'destroy'])->name('forms.destroy');
+    Route::get(   '/forms/{id}/submissions',        [\Meta\AdminCore\Http\Controllers\FormSubmissionsController::class, 'index'])->name('forms.submissions.index');
+    Route::get(   '/forms/{id}/submissions/export', [\Meta\AdminCore\Http\Controllers\FormSubmissionsController::class, 'export'])->name('forms.submissions.export');
+    Route::patch( '/forms/{id}/submissions/{subId}', [\Meta\AdminCore\Http\Controllers\FormSubmissionsController::class, 'setStatus'])->name('forms.submissions.status');
+    Route::delete('/forms/{id}/submissions/{subId}', [\Meta\AdminCore\Http\Controllers\FormSubmissionsController::class, 'destroy'])->name('forms.submissions.destroy');
+
     // Taxonomies — vocabularies (tag/category/…) + term CRUD.
     Route::get(   '/taxonomies',          [\Meta\AdminCore\Http\Controllers\TaxonomyController::class, 'index'])->name('taxonomies.index');
     Route::post(  '/taxonomies',          [\Meta\AdminCore\Http\Controllers\TaxonomyController::class, 'store'])->name('taxonomies.store');
