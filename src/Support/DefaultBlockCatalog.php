@@ -192,7 +192,15 @@ class DefaultBlockCatalog implements BlockCatalog
 
     public function pagesGrouped(): array
     {
-        return static::PAGES;
+        $enabled = $this->enabledPageSlugs();
+        if ($enabled === null) return static::PAGES;
+
+        $out = [];
+        foreach (static::PAGES as $group => $pages) {
+            $filtered = array_intersect_key($pages, array_flip($enabled));
+            if ($filtered) $out[$group] = $filtered;
+        }
+        return $out;
     }
 
     public function pageLabel(string $slug): string
@@ -208,13 +216,36 @@ class DefaultBlockCatalog implements BlockCatalog
      */
     public function pagesFlat(): array
     {
+        $enabled = $this->enabledPageSlugs();
+        $enabledKeys = $enabled === null ? null : array_flip($enabled);
+
         $out = [];
         foreach (static::PAGES as $group => $pages) {
             foreach ($pages as $slug => $label) {
+                if ($enabledKeys !== null && !isset($enabledKeys[$slug])) continue;
                 $out[] = ['slug' => $slug, 'label' => $label, 'group' => $group];
             }
         }
         return $out;
+    }
+
+    /**
+     * Extension hook for consumer sites that want a boolean toggle per
+     * page — disable a slug here and it vanishes from the admin
+     * «Страница» dropdown, enable it to bring it back.
+     *
+     *   • Return `null`  — no filtering, every page in static::PAGES
+     *                      is visible (default).
+     *   • Return `[...]` — whitelist of slugs; anything missing from
+     *                      the list is hidden.
+     *
+     * Typical consumer override backs this with a DB column
+     * (`pages.status='published'` is common) or a settings row so
+     * non-developers can flip the switch from the admin UI.
+     */
+    protected function enabledPageSlugs(): ?array
+    {
+        return null;
     }
 
     public function blockTypesGrouped(): array

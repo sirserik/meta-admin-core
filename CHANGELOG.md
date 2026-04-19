@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.29.0] — 2026-04-19
+
+### Added
+- **`DefaultBlockCatalog::enabledPageSlugs()` extension hook.** Lets
+  consumer sites plug a per-page boolean toggle into the admin
+  «Страница» dropdown without reimplementing the whole catalog.
+  Override it to return a slug whitelist (typically driven by a
+  `pages.status` column or a settings row); anything outside the
+  whitelist vanishes from the picker. Default `null` means "no
+  filtering" — fully backwards compatible.
+  ```php
+  class MyCatalog extends DefaultBlockCatalog
+  {
+      protected function enabledPageSlugs(): ?array
+      {
+          return Page::where('status', 'published')->pluck('slug')->all();
+      }
+  }
+  ```
+
 ## [0.28.0] — 2026-04-19
 
 ### Added
