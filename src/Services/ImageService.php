@@ -90,4 +90,58 @@ class ImageService
         $this->delete($oldPath);
         return $this->upload($file, $folder, $width, $height);
     }
+
+    /**
+     * Generate a smart-cropped variant using a focal point (relative
+     * coordinates in [0..1], 0,0 = top-left, 1,1 = bottom-right).
+     *
+     *   $path   — path inside the `public` disk (same format `upload()` returns).
+     *   $w, $h  — target dimensions in pixels.
+     *   $fx, $fy — focal point. 0.5/0.5 = dead centre (same as a plain
+     *             "cover" crop). 0.2/0.8 = 20% from left, 80% from top.
+     *
+     * Returned path points at a cached variant at
+     * "{folder}/focal/{w}x{h}_{fx}_{fy}-{original-filename}" so the
+     * disk becomes the cache. Regenerate by deleting that variant.
+     * Falls back to the original on errors.
+     */
+    public function focalCrop(string $path, int $w, int $h, float $fx = 0.5, float $fy = 0.5): string
+    {
+        if (!class_exists(\Intervention\Image\Laravel\Facades\Image::class)) return $path;
+
+        $fx = max(0.0, min(1.0, $fx));
+        $fy = max(0.0, min(1.0, $fy));
+
+        $cleanPath = preg_replace('#^/?storage/#', '', $path);
+        $dir  = dirname($cleanPath);
+        $file = basename($cleanPath);
+        $tag  = sprintf('%dx%d_%02d_%02d', $w, $h, (int) round($fx * 100), (int) round($fy * 100));
+        $cached = "{$dir}/focal/{$tag}-{$file}";
+
+        $disk = Storage::disk('public');
+        if ($disk->exists($cached)) return $cached;
+        if (!$disk->exists($cleanPath)) return $path;
+
+        try {
+            $image = \Intervention\Image\Laravel\Facades\Image::read($disk->path($cleanPath));
+            $srcW  = $image->width();
+            $srcH  = $image->height();
+
+            // Cover-scale so the smaller axis fills the target, then crop
+            // from the focal anchor.
+            $scale = max($w / $srcW, $h / $srcH);
+            $newW  = (int) ceil($srcW * $scale);
+            $newH  = (int) ceil($srcH * $scale);
+            $image->resize($newW, $newH);
+
+            $cropX = (int) round(max(0, min($newW - $w, $fx * $newW - $w / 2)));
+            $cropY = (int) round(max(0, min($newH - $h, $fy * $newH - $h / 2)));
+            $image->crop($w, $h, $cropX, $cropY);
+
+            $disk->put($cached, $image->toWebp($this->quality));
+            return $cached;
+        } catch (\Throwable) {
+            return $path;
+        }
+    }
 }

@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.35.0] — 2026-04-19
+
+### Added
+- **Focal-point smart cropping.** Editors mark where the *subject* of
+  an image lives; the server crops around that anchor so the face /
+  logo / landmark stays visible at every aspect ratio instead of
+  getting guillotined by a plain centre-crop.
+
+  - `ImageService::focalCrop(\$path, \$w, \$h, \$fx, \$fy)` — scales
+    cover-style then crops around the focal point. Caches each variant
+    at `{dir}/focal/{WxH_FX_FY}-{file}` so the disk is the cache;
+    delete the cached file to regenerate. Silently returns the
+    original path if intervention/image is missing.
+  - `resources/js/components/FocalPointPicker.vue` — click-on-image
+    picker. v-model is `{x, y}` in [0..1] (origin top-left). Shows a
+    crosshair + guide lines, and includes a "reset to centre" link.
+
+  Consumers wire the picker next to their existing image uploader and
+  persist `{image}_focal_x` / `{image}_focal_y` columns — then call
+  `focalCrop()` on the server when rendering cropped variants.
+
 ## [0.34.0] — 2026-04-19
 
 ### Added
