@@ -42,6 +42,7 @@ class AdminCoreServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \Meta\AdminCore\Console\Commands\InstallCommand::class,
+                \Meta\AdminCore\Console\Commands\ApplyScheduleCommand::class,
             ]);
         }
 

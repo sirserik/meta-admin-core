@@ -44,6 +44,9 @@ class AdminCore
     /** @var array<int, array<string, mixed>> — "quick action" buttons on dashboard */
     protected array $dashboardQuickActions = [];
 
+    /** @var array<int, class-string> — models the scheduler should tick. */
+    protected array $schedulableModels = [];
+
     /** Name of the feature whose register() is currently executing, if any.
      * Items added while this is set get tagged so the sidebar can style
      * them distinctly. */
@@ -58,6 +61,31 @@ class AdminCore
         $prev = $this->currentFeature;
         $this->currentFeature = $name;
         try { $cb($this); } finally { $this->currentFeature = $prev; }
+    }
+
+    /**
+     * Register an Eloquent model for scheduled publishing.
+     *
+     * The model must use the `Meta\AdminCore\Concerns\Publishable` trait
+     * and have `status`, `publish_at`, `unpublish_at` columns on its
+     * table. The `admin-core:apply-schedule` command iterates every
+     * registered model each run and flips `status` when timestamps
+     * cross the current time.
+     *
+     * @param  class-string  $model
+     */
+    public function schedulable(string $model): self
+    {
+        if (!in_array($model, $this->schedulableModels, true)) {
+            $this->schedulableModels[] = $model;
+        }
+        return $this;
+    }
+
+    /** @return array<int, class-string> */
+    public function getSchedulableModels(): array
+    {
+        return $this->schedulableModels;
     }
 
     public function resource(string $name, array $config): self

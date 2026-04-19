@@ -5,6 +5,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.30.0] — 2026-04-19
+
+### Added
+- **Scheduled publishing.** New `Publishable` trait + companion
+  migration helper + `admin-core:apply-schedule` console command let
+  editors pick a `publish_at` / `unpublish_at` timestamp per row.
+  The ticker flips `status` between `'draft'` and `'published'`
+  whenever the current time crosses one of the marks — idempotent,
+  safe to run every minute:
+  ```php
+  class Article extends Model {
+      use \Meta\AdminCore\Concerns\Publishable;
+  }
+
+  // AppServiceProvider::boot()
+  AdminCore::schedulable(\App\Models\Article::class);
+
+  // bootstrap/app.php  (Laravel 12 scheduler)
+  ->withSchedule(fn (Schedule $s) =>
+      $s->command('admin-core:apply-schedule')->everyMinute())
+  ```
+  Migration side uses `PublishableSchema::columns($table)` — drops
+  two timestamp columns (`publish_at`, `unpublish_at`) with indexes.
+
+  Query scopes ship with the trait: `->published()` returns rows
+  visible *right now* (status published AND publish_at past AND
+  unpublish_at future/null); `->scheduled()` lists upcoming
+  publications; `->duePublish()` / `->dueUnpublish()` drive the
+  ticker. Fully backwards compatible — models that don't opt in
+  are unaffected.
+
 ## [0.29.0] — 2026-04-19
 
 ### Added
