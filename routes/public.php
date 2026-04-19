@@ -41,3 +41,11 @@ Route::get('/storage/{path}', function (string $path) {
 Route::get('/sitemap.xml',
     [\Meta\AdminCore\Http\Controllers\SitemapController::class, 'index'],
 )->name('sitemap');
+
+// Read-only Content API. Wrap the group middleware in your consumer
+// if you need auth/throttling; by default it's public.
+Route::prefix('api/content')->group(function () {
+    Route::get('pages/{slug}',           [\Meta\AdminCore\Http\Controllers\ContentApiController::class, 'pageBySlug'])->where('slug', '[\w\-]+')->name('content-api.page');
+    Route::get('{resource}',             [\Meta\AdminCore\Http\Controllers\ContentApiController::class, 'resourceList'])->where('resource', '[\w\-]+')->name('content-api.list');
+    Route::get('{resource}/{idOrSlug}',  [\Meta\AdminCore\Http\Controllers\ContentApiController::class, 'resourceShow'])->where('resource', '[\w\-]+')->name('content-api.show');
+});

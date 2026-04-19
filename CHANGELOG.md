@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.39.0] — 2026-04-19
+
+### Added
+- **Read-only Content API.** Exposes every registered resource as
+  JSON so frontends (Next.js, mobile, SSG…) can decouple from Blade.
+  Endpoints:
+  ```
+  GET /api/content/pages/{slug}
+      → { page: {slug, locale}, blocks: [ {block_type, title, data, …} ] }
+
+  GET /api/content/{resource}?page=1&per_page=20&locale=kk
+      → paginated list (data + meta)
+  GET /api/content/{resource}/{id_or_slug}
+      → single record
+  ```
+  Locale resolution: `?locale=`, then `Accept-Language` header, then
+  `config('app.locale')`, then first entry of `admin-core.locales`.
+  Translatable fields are collapsed into the requested locale using
+  the `translate()` method when the model provides it.
+
+  Published status is enforced — `status='published'` or
+  `is_published=true` is auto-applied when the model's table has
+  that column, so drafts don't leak through the public API.
+  Public by default; wrap the route group with `auth:sanctum` or
+  throttle middleware in the consumer if you need to lock it down.
+
 ## [0.38.0] — 2026-04-19
 
 ### Added
