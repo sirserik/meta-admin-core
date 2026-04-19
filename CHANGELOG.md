@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.33.0] — 2026-04-19
+
+### Added
+- **Conditional fields.** Resource fields and attributes accept a
+  `visible_when` key to hide themselves until a sibling takes a
+  specific value, turning the schema into a lightweight rules engine:
+  ```php
+  AdminCore::resource('articles', [
+      'attributes' => [
+          ['name' => 'link_type', 'type' => 'select', 'options' => [
+              ['value' => 'internal', 'label' => 'Внутренняя'],
+              ['value' => 'external', 'label' => 'Внешняя ссылка'],
+          ]],
+          ['name' => 'external_url', 'type' => 'url', 'label' => 'URL',
+           'visible_when' => ['field' => 'link_type', 'equals' => 'external']],
+      ],
+  ]);
+  ```
+  Supported operators per condition: `equals`, `not_equals`, `in`,
+  `not_in`, `not_empty`, `empty`. Pass an array of conditions for AND
+  semantics. Translatable fields compare against the currently active
+  locale, so the same condition works across ru/kk/en.
+
 ## [0.32.0] — 2026-04-19
 
 ### Added

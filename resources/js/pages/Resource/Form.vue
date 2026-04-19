@@ -72,6 +72,36 @@ function submit() {
 const primaryActions = computed(() => props.actions.filter(a => a.primary));
 const secondaryActions = computed(() => props.actions.filter(a => !a.primary));
 
+// ----- Conditional fields -----
+// A field/attribute can declare `visible_when: {field, equals|not_equals|in|not_empty}`
+// OR `visible_when: [ …list… ]` (AND semantics). Translatable form values
+// are objects {ru,kk,en} — we pick the active locale for comparison so the
+// condition reflects what the editor currently sees.
+function valueFor(name) {
+    const v = form[name];
+    if (v && typeof v === 'object' && ('ru' in v || 'kk' in v || 'en' in v)) {
+        return v[activeLocale.value] ?? v.ru ?? v.kk ?? v.en ?? '';
+    }
+    return v;
+}
+function evalCond(c) {
+    if (!c || typeof c !== 'object' || !('field' in c)) return true;
+    const v = valueFor(c.field);
+    if ('equals'      in c) return v === c.equals;
+    if ('not_equals'  in c) return v !== c.not_equals;
+    if ('in'          in c) return Array.isArray(c.in) && c.in.includes(v);
+    if ('not_in'      in c) return Array.isArray(c.not_in) && !c.not_in.includes(v);
+    if ('not_empty'   in c) return !!v;
+    if ('empty'       in c) return !v;
+    return true;
+}
+function isFieldVisible(f) {
+    const c = f.visible_when;
+    if (!c) return true;
+    const list = Array.isArray(c) && !('field' in c) ? c : [c];
+    return list.every(evalCond);
+}
+
 // Split sections: translatable fields go to main, plain attributes to sidebar.
 // Explicit `group: 'content'` on attribute forces main column; `group: 'sidebar'`
 // forces right column. Default for attributes = sidebar.
@@ -181,17 +211,21 @@ const hasTranslatableAnywhere = computed(() =>
                         {{ sec.label }}
                     </h3>
                     <div class="space-y-5">
-                        <TranslatableField v-for="f in sec.translatable" :key="f.name"
-                            :name="f.name" :type="f.type" :label="f.label" :required="f.required"
-                            :active-locale="activeLocale" :errors="form.errors" v-model="form[f.name]" />
+                        <template v-for="f in sec.translatable" :key="f.name">
+                            <TranslatableField v-if="isFieldVisible(f)"
+                                :name="f.name" :type="f.type" :label="f.label" :required="f.required"
+                                :active-locale="activeLocale" :errors="form.errors" v-model="form[f.name]" />
+                        </template>
                         <div v-if="sec.plain.length" :class="sec.translatable.length ? 'pt-4 border-t border-gray-100 dark:border-gray-700' : ''">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <SimpleField v-for="a in sec.plain" :key="a.name"
-                                    :name="a.name" :type="a.type" :label="a.label"
-                                    :required="a.required" :placeholder="a.placeholder"
-                                    :options="a.options || []" :help="a.help"
-                                    :errors="form.errors"
-                                    v-model="form[a.name]" />
+                                <template v-for="a in sec.plain" :key="a.name">
+                                    <SimpleField v-if="isFieldVisible(a)"
+                                        :name="a.name" :type="a.type" :label="a.label"
+                                        :required="a.required" :placeholder="a.placeholder"
+                                        :options="a.options || []" :help="a.help"
+                                        :errors="form.errors"
+                                        v-model="form[a.name]" />
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -228,12 +262,14 @@ const hasTranslatableAnywhere = computed(() =>
                         {{ sec.label }}
                     </h3>
                     <div class="space-y-4">
-                        <SimpleField v-for="a in sec.items" :key="a.name"
-                            :name="a.name" :type="a.type" :label="a.label"
-                            :required="a.required" :placeholder="a.placeholder"
-                            :options="a.options || []" :help="a.help"
-                            :errors="form.errors"
-                            v-model="form[a.name]" />
+                        <template v-for="a in sec.items" :key="a.name">
+                            <SimpleField v-if="isFieldVisible(a)"
+                                :name="a.name" :type="a.type" :label="a.label"
+                                :required="a.required" :placeholder="a.placeholder"
+                                :options="a.options || []" :help="a.help"
+                                :errors="form.errors"
+                                v-model="form[a.name]" />
+                        </template>
                     </div>
                 </div>
             </aside>
