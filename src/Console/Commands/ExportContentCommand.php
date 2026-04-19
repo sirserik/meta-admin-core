@@ -66,7 +66,7 @@ class ExportContentCommand extends Command
         foreach ($tables as $t) {
             if (!Schema::hasTable($t)) continue;
             $rows = DB::table($t)->get();
-            $zip->addFromString("{$t}.json", $rows->toJson(JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            $zip->addFromString("{$t}.json", json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE));
             $manifest['tables'][$t] = $rows->count();
         }
 
@@ -77,7 +77,7 @@ class ExportContentCommand extends Command
             $table = (new $model)->getTable();
             if (!Schema::hasTable($table)) continue;
             $rows = DB::table($table)->get();
-            $zip->addFromString("resource.{$name}.json", $rows->toJson(JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            $zip->addFromString("resource.{$name}.json", json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE));
             $manifest['resources'][$name] = ['table' => $table, 'count' => $rows->count()];
         }
 
