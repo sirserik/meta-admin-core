@@ -32,6 +32,13 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('spa.dashboard');
 
+    // Logout — AdminLayout.vue posts here on «выйти». Inertia handling
+    // is inside the controller: X-Inertia requests get a 409 + location
+    // header so the browser hard-navigates instead of trying to render
+    // the public site inside the admin shell.
+    Route::post('/logout', [\Meta\AdminCore\Http\Controllers\LogoutController::class, 'destroy'])
+        ->name('logout');
+
     // Legacy alias: /admin/dashboard → /admin (302). Old Blade-admin code
     // pointed here before the headless migration; keep backwards compat.
     Route::redirect('/dashboard', '/' . $prefix, 302);

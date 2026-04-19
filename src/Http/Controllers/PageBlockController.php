@@ -27,17 +27,50 @@ class PageBlockController extends Controller
     {
         $filters = $request->only(['page', 'type', 'status', 'search']);
 
-        $query = PageBlock::query()->orderBy('page_name')->orderBy('sort_order');
+        // Newest first — both pages and blocks within a page bubble up
+        // on recent edits. groupBy('page_name') preserves iteration
+        // order, so whatever page has the most-recent block lands on top.
+        $query = PageBlock::query()->orderByDesc('updated_at')->orderByDesc('id');
 
         if (!empty($filters['page']))   $query->where('page_name',  $filters['page']);
         if (!empty($filters['type']))   $query->where('block_type', $filters['type']);
         if (!empty($filters['status'])) $query->where('status',     $filters['status']);
         if (!empty($filters['search'])) {
             $term = $filters['search'];
-            $query->where(function ($q) use ($term) {
-                $q->where('block_key',  'like', "%{$term}%")
-                  ->orWhere('page_name', 'like', "%{$term}%")
-                  ->orWhere('title',     'like', "%{$term}%");
+            $like = "%{$term}%";
+
+            // Match page slugs whose catalog label or group name contains
+            // the term, so typing "документы" finds blocks on pages like
+            // "Отчёты и прозрачность" via their human label too.
+            $pageSlugs = [];
+            foreach ($this->catalog->pagesGrouped() as $group => $pages) {
+                foreach ($pages as $slug => $label) {
+                    if (mb_stripos((string) $label, $term) !== false
+                        || mb_stripos((string) $group, $term) !== false) {
+                        $pageSlugs[] = $slug;
+                    }
+                }
+            }
+
+            $query->where(function ($q) use ($like, $pageSlugs) {
+                $q->where('block_key',  'like', $like)
+                  ->orWhere('page_name', 'like', $like)
+                  ->orWhere('title',     'like', $like)
+                  ->orWhere('subtitle',  'like', $like)
+                  ->orWhere('content',   'like', $like)
+                  ->orWhere('data',      'like', $like)
+                  // Polymorphic translations table — match per-locale
+                  // values (kk, en) for title/subtitle/content/etc.
+                  ->orWhereIn('id', function ($sub) use ($like) {
+                      $sub->select('translatable_id')
+                          ->from('translations')
+                          ->where('translatable_type', PageBlock::class)
+                          ->where('value', 'like', $like);
+                  });
+
+                if (!empty($pageSlugs)) {
+                    $q->orWhereIn('page_name', $pageSlugs);
+                }
             });
         }
 

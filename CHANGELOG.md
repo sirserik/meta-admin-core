@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.28.0] — 2026-04-19
+
+### Added
+- **`POST /admin/logout` route + `LogoutController`.** The shipped
+  `AdminLayout.vue` has always posted here on "выйти", but the
+  package never defined a matching route — consumers hit 404.
+  Now owned by the package. Inertia-aware: when called with an
+  `X-Inertia` header (which is always the case from the admin SPA)
+  the controller returns `Inertia::location('/')` so the browser
+  does a full-page navigation instead of rendering the public home
+  inside the admin shell. Vanilla (non-Inertia) callers still get a
+  plain `redirect('/')`.
+
+### Changed
+- **`/admin/blocks` index.** Default sort switched from
+  `page_name asc, sort_order asc` to `updated_at desc, id desc` so
+  the block you just edited sits at the top. `groupBy('page_name')`
+  downstream preserves iteration order, so the whole page with the
+  freshest edit bubbles up.
+- **`/admin/blocks` search** now matches a much wider surface:
+  `subtitle`, `content`, raw `data` JSON, per-locale values in the
+  polymorphic `translations` table, and page slugs whose
+  `BlockCatalog` label or group name contains the term. Typing
+  "документы" finds blocks on a page labeled "Отчёты и прозрачность"
+  — not just exact slug/title hits as before.
+
 ## [0.27.0] — 2026-04-18
 
 ### Added
