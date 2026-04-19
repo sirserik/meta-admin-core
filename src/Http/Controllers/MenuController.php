@@ -13,7 +13,10 @@ use Meta\AdminCore\Models\MenuItem;
 
 class MenuController extends Controller
 {
-    protected const LOCALES = ['ru', 'kk', 'en'];
+    protected function locales(): array
+    {
+        return (array) config('admin-core.locales', ['ru', 'kk', 'en']);
+    }
 
     public function index(): Response
     {
@@ -49,7 +52,7 @@ class MenuController extends Controller
                 'title'     => $m->translate('title', 'ru') ?? '',
                 'parent_id' => $m->parent_id,
             ])->values(),
-            'locales' => self::LOCALES,
+            'locales' => $this->locales(),
         ]);
     }
 
@@ -130,7 +133,7 @@ class MenuController extends Controller
             'icon'         => 'nullable|string|max:100',
             'is_published' => 'nullable|boolean',
         ];
-        foreach (self::LOCALES as $locale) {
+        foreach ($this->locales() as $locale) {
             $rules["title.{$locale}"] = ($locale === 'ru') ? 'required|string|max:255' : 'nullable|string|max:255';
             $rules["url.{$locale}"]   = 'nullable|string|max:500';
         }
@@ -139,7 +142,7 @@ class MenuController extends Controller
 
     protected function persistTranslations(MenuItem $item, array $data): void
     {
-        foreach (self::LOCALES as $locale) {
+        foreach ($this->locales() as $locale) {
             $payload = [];
             foreach (['title', 'url'] as $field) {
                 $value = $data[$field][$locale] ?? '';
@@ -152,7 +155,7 @@ class MenuController extends Controller
     protected function localized(MenuItem $m, string $field): array
     {
         $out = [];
-        foreach (self::LOCALES as $locale) {
+        foreach ($this->locales() as $locale) {
             $out[$locale] = $m->translate($field, $locale) ?? '';
         }
         return $out;

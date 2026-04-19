@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.36.0] — 2026-04-19
+
+### Added
+- **Public sitemap at `/sitemap.xml`.** Cached (1h TTL by default,
+  configurable via `admin-core.sitemap.ttl`), standards-compliant
+  `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`.
+  Consumers declare URLs via a simple callback:
+  ```php
+  AdminCore::sitemapUrl(function () {
+      return Page::where('status', 'published')->get()->map(fn ($p) => [
+          'loc'        => url($p->slug),
+          'lastmod'    => $p->updated_at->toIso8601String(),
+          'changefreq' => 'weekly',
+          'priority'   => '0.7',
+      ]);
+  });
+  ```
+  Multiple providers compose — register once per model/section.
+
+### Changed
+- **Locales are now config-driven.** `PageBlockController` and
+  `MenuController` previously had a hardcoded
+  `protected const LOCALES = ['ru','kk','en']`. Both now read from
+  `config('admin-core.locales')` (already present in the published
+  config). Form defaults use `array_fill_keys($locales, '')`,
+  request-side persistence keys off the first locale instead of a
+  literal `'ru'`. Opens the door to any 1..N locale setup — pass e.g.
+  `['en']` for a monolingual site or `['en','fr','es','de']` for a
+  four-language one. No migration needed: the row's `title/subtitle/
+  content` columns keep storing the primary locale, the rest live
+  in the polymorphic `translations` table.
+
 ## [0.35.0] — 2026-04-19
 
 ### Added

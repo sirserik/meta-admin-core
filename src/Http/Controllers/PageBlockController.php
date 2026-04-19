@@ -15,8 +15,18 @@ use Meta\AdminCore\Services\ImageService;
 
 class PageBlockController extends Controller
 {
-    protected const LOCALES = ['ru', 'kk', 'en'];
     protected const TRANSLATABLE = ['title', 'subtitle', 'content'];
+
+    /** Configured locales — primary first. Reads from admin-core.locales. */
+    protected function locales(): array
+    {
+        return (array) config('admin-core.locales', ['ru', 'kk', 'en']);
+    }
+
+    protected function primaryLocale(): string
+    {
+        return $this->locales()[0] ?? 'ru';
+    }
 
     public function __construct(
         protected ImageService $imageService,
@@ -104,9 +114,9 @@ class PageBlockController extends Controller
                 'sort_order'   => 0,
                 'publish_at'   => '',
                 'unpublish_at' => '',
-                'title'        => ['ru' => '', 'kk' => '', 'en' => ''],
-                'subtitle'     => ['ru' => '', 'kk' => '', 'en' => ''],
-                'content'      => ['ru' => '', 'kk' => '', 'en' => ''],
+                'title'        => array_fill_keys($this->locales(), ''),
+                'subtitle'     => array_fill_keys($this->locales(), ''),
+                'content'      => array_fill_keys($this->locales(), ''),
                 'data'         => '{}',
                 'settings'     => '{}',
             ],
@@ -115,7 +125,7 @@ class PageBlockController extends Controller
             'typesFlat'          => $this->blockTypesIndex(),
             'schemas'            => $this->schemasMap(),
             'statuses'           => $this->statusOptions(),
-            'locales'            => self::LOCALES,
+            'locales'            => $this->locales(),
             'isEdit'             => false,
             'existingKeysByPage' => $this->existingKeysByPage(),
         ]);
@@ -132,7 +142,7 @@ class PageBlockController extends Controller
             'typesFlat'          => $this->blockTypesIndex(),
             'schemas'            => $this->schemasMap(),
             'statuses'           => $this->statusOptions(),
-            'locales'            => self::LOCALES,
+            'locales'            => $this->locales(),
             'isEdit'             => true,
             'existingKeysByPage' => $this->existingKeysByPage(),
         ]);
@@ -155,9 +165,9 @@ class PageBlockController extends Controller
             'sort_order'   => $data['sort_order'] ?? 0,
             'publish_at'   => $data['publish_at']   ?: null,
             'unpublish_at' => $data['unpublish_at'] ?: null,
-            'title'        => $data['title']['ru']    ?? null,
-            'subtitle'     => $data['subtitle']['ru'] ?? null,
-            'content'      => $data['content']['ru']  ?? null,
+            'title'        => $data['title'][$this->primaryLocale()]    ?? null,
+            'subtitle'     => $data['subtitle'][$this->primaryLocale()] ?? null,
+            'content'      => $data['content'][$this->primaryLocale()]  ?? null,
             'data'         => $this->decodeJson($data['data']     ?? null),
             'settings'     => $this->decodeJson($data['settings'] ?? null),
         ]);
@@ -182,9 +192,9 @@ class PageBlockController extends Controller
             'sort_order'   => $data['sort_order'] ?? $block->sort_order,
             'publish_at'   => array_key_exists('publish_at',   $data) ? ($data['publish_at']   ?: null) : $block->publish_at,
             'unpublish_at' => array_key_exists('unpublish_at', $data) ? ($data['unpublish_at'] ?: null) : $block->unpublish_at,
-            'title'        => $data['title']['ru']    ?? $block->title,
-            'subtitle'     => $data['subtitle']['ru'] ?? $block->subtitle,
-            'content'      => $data['content']['ru']  ?? $block->content,
+            'title'        => $data['title'][$this->primaryLocale()]    ?? $block->title,
+            'subtitle'     => $data['subtitle'][$this->primaryLocale()] ?? $block->subtitle,
+            'content'      => $data['content'][$this->primaryLocale()]  ?? $block->content,
             'data'         => $this->decodeJson($data['data']     ?? null),
             'settings'     => $this->decodeJson($data['settings'] ?? null),
         ]);
@@ -337,7 +347,7 @@ class PageBlockController extends Controller
             'settings'     => 'nullable|string',
         ];
         foreach (self::TRANSLATABLE as $field) {
-            foreach (self::LOCALES as $locale) {
+            foreach ($this->locales() as $locale) {
                 $rules["{$field}.{$locale}"] = 'nullable|string';
             }
         }
@@ -346,7 +356,7 @@ class PageBlockController extends Controller
 
     protected function persistTranslations(PageBlock $block, array $data): void
     {
-        foreach (self::LOCALES as $locale) {
+        foreach ($this->locales() as $locale) {
             $payload = [];
             foreach (self::TRANSLATABLE as $field) {
                 $value = $data[$field][$locale] ?? '';
@@ -395,7 +405,7 @@ class PageBlockController extends Controller
         $translations = [];
         foreach (self::TRANSLATABLE as $field) {
             $translations[$field] = [];
-            foreach (self::LOCALES as $locale) {
+            foreach ($this->locales() as $locale) {
                 $translations[$field][$locale] = $b->translate($field, $locale)
                     ?? ($locale === 'ru' ? ($b->{$field} ?? '') : '');
             }

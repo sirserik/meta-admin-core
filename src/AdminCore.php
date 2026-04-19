@@ -47,6 +47,8 @@ class AdminCore
     /** @var array<int, class-string> — models the scheduler should tick. */
     protected array $schedulableModels = [];
 
+    protected ?\Meta\AdminCore\Support\SitemapRegistry $sitemap = null;
+
     /** Name of the feature whose register() is currently executing, if any.
      * Items added while this is set get tagged so the sidebar can style
      * them distinctly. */
@@ -86,6 +88,22 @@ class AdminCore
     public function getSchedulableModels(): array
     {
         return $this->schedulableModels;
+    }
+
+    /**
+     * Contribute URLs to the `/sitemap.xml` output. See
+     * `\Meta\AdminCore\Support\SitemapRegistry` for the row shape.
+     */
+    public function sitemapUrl(callable $provider): self
+    {
+        $this->sitemap ??= new \Meta\AdminCore\Support\SitemapRegistry();
+        $this->sitemap->register($provider);
+        return $this;
+    }
+
+    public function sitemap(): \Meta\AdminCore\Support\SitemapRegistry
+    {
+        return $this->sitemap ??= new \Meta\AdminCore\Support\SitemapRegistry();
     }
 
     public function resource(string $name, array $config): self

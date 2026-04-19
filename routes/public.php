@@ -35,3 +35,9 @@ Route::get('/media/{path}', function (string $path) {
 Route::get('/storage/{path}', function (string $path) {
     return redirect('/media/' . $path, 301);
 })->where('path', '.*');
+
+// Public sitemap — renders URLs contributed by consumers via
+// AdminCore::sitemapUrl(). Cached via admin-core.sitemap.* config.
+Route::get('/sitemap.xml',
+    [\Meta\AdminCore\Http\Controllers\SitemapController::class, 'index'],
+)->name('sitemap');
