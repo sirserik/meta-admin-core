@@ -5,6 +5,42 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.37.0] — 2026-04-19
+
+### Added
+- **Webhooks.** Outbound HTTP callbacks on model CRUD events.
+  ```php
+  class Article extends Model {
+      use \Meta\AdminCore\Concerns\Webhookable;
+  }
+  ```
+  Events fire on `created`, `updated`, `deleted`, named
+  `{table}.{action}` (e.g. `articles.updated`). The trait dispatches
+  through `WebhookDispatcher`, which POSTs a JSON body to every
+  webhook subscribed to the event:
+  ```
+  POST https://example.com/hook
+  X-AdminCore-Event: articles.updated
+  X-AdminCore-Hook-Id: 3
+  X-AdminCore-Signature: sha256=…  (HMAC-SHA256 of body, when secret set)
+
+  { "event":"articles.updated", "delivered_at":"…", "payload":{ … } }
+  ```
+  Ships with:
+  - `webhooks` table migration (url, label, events, HMAC secret,
+    is_active, last_fired_at).
+  - `/admin/webhooks` CRUD screen with per-row "Тест" button,
+    event-picker grouped by table, dirty HMAC-secret handling (empty
+    input leaves the stored secret untouched).
+  - `WebhookDispatcher::dispatch($event, $payload)` as the manual
+    trigger for ad-hoc events not tied to a model save.
+  - `PageBlock` adopts `Webhookable` out of the box.
+
+  Failures are swallowed into the log (webhooks must never crash the
+  admin); a non-responsive endpoint won't block editors. For at-
+  least-once delivery, wrap the dispatcher in a queued job in your
+  consumer.
+
 ## [0.36.0] — 2026-04-19
 
 ### Added

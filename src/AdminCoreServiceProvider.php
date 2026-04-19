@@ -128,6 +128,7 @@ class AdminCoreServiceProvider extends ServiceProvider
                 $core->menuItem('Кэш',        "/{$prefix}/cache",    'fa-broom',           'Система', 96);
                 $core->menuItem('Фичи',       "/{$prefix}/features", 'fa-toggle-on',       'Система', 98);
                 $core->menuItem('Обновления', "/{$prefix}/updates",  'fa-cloud-arrow-down','Система', 99);
+                $core->menuItem('Webhooks',   "/{$prefix}/webhooks", 'fa-bolt',             'Система', 97);
 
                 // Permissions matrix — surfaced only if the consumer
                 // has spatie/laravel-permission, since the controller

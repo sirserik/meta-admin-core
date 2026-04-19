@@ -81,6 +81,13 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::get('/permissions',       [\Meta\AdminCore\Http\Controllers\PermissionsController::class, 'index'])->name('permissions.index');
     Route::put('/permissions',       [\Meta\AdminCore\Http\Controllers\PermissionsController::class, 'update'])->name('permissions.update');
 
+    // Webhooks CRUD + manual test-fire.
+    Route::get(   '/webhooks',            [\Meta\AdminCore\Http\Controllers\WebhooksController::class, 'index'])->name('webhooks.index');
+    Route::post(  '/webhooks',            [\Meta\AdminCore\Http\Controllers\WebhooksController::class, 'store'])->name('webhooks.store');
+    Route::put(   '/webhooks/{id}',       [\Meta\AdminCore\Http\Controllers\WebhooksController::class, 'update'])->name('webhooks.update');
+    Route::delete('/webhooks/{id}',       [\Meta\AdminCore\Http\Controllers\WebhooksController::class, 'destroy'])->name('webhooks.destroy');
+    Route::post(  '/webhooks/{id}/test',  [\Meta\AdminCore\Http\Controllers\WebhooksController::class, 'test'])->name('webhooks.test');
+
     // Revision history for the built-in PageBlock (registered under
     // the dedicated 'blocks' controller, not the generic resource
     // registry).

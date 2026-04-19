@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use Meta\AdminCore\Concerns\Publishable;
 use Meta\AdminCore\Concerns\Revisionable;
 use Meta\AdminCore\Concerns\Translatable;
+use Meta\AdminCore\Concerns\Webhookable;
 
 /**
  * A single piece of page content: hero, stats block, photo gallery,
@@ -20,7 +21,7 @@ use Meta\AdminCore\Concerns\Translatable;
  */
 class PageBlock extends Model
 {
-    use Publishable, Revisionable, Translatable;
+    use Publishable, Revisionable, Translatable, Webhookable;
 
     protected $table = 'page_blocks';
 
