@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.43.0] — 2026-04-19
+
+### Added
+- **Content import / export.** Two artisan commands let you move
+  CMS data between installs (staging → prod, seed fresh instances,
+  snapshot before risky edits):
+  ```
+  php artisan admin-core:export [--out=path.zip]
+  php artisan admin-core:import path.zip [--mode=merge|replace] [--dry-run]
+  ```
+  Export bundles into a single ZIP:
+  - `manifest.json` (version + row counts + resource list)
+  - `page_blocks.json`, `menu_items.json`, `translations.json`,
+    `taxonomy_terms.json`, `taxonomy_term_model.json`, `settings.json`
+  - `resource.{name}.json` per registered `AdminCore::resource()`
+
+  Import runs inside a transaction with FK checks off for the
+  duration — row order inside the zip doesn't matter. `merge` upserts
+  by primary key (keeps rows not in the dump); `replace` truncates
+  each target first. `--dry-run` parses and reports counts without
+  touching the DB.
+
 ## [0.42.0] — 2026-04-19
 
 ### Added

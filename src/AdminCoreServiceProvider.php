@@ -43,6 +43,8 @@ class AdminCoreServiceProvider extends ServiceProvider
             $this->commands([
                 \Meta\AdminCore\Console\Commands\InstallCommand::class,
                 \Meta\AdminCore\Console\Commands\ApplyScheduleCommand::class,
+                \Meta\AdminCore\Console\Commands\ExportContentCommand::class,
+                \Meta\AdminCore\Console\Commands\ImportContentCommand::class,
             ]);
         }
 
