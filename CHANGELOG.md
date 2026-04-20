@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.46.0] — 2026-04-20
+
+### Added
+- **Positional hero buttons.** Each row in the hero `buttons[]` array
+  gains a `position` field (plain text input for now, with the allowed
+  values listed in the label). 9 zones are supported:
+  `top-left` / `top-center` / `top-right`,
+  `center-left` / `center` / `center-right`,
+  `bottom-left` / `bottom-center` / `bottom-right`.
+  Default is `center`.
+- **`hero_buttons_zones($data, $locale = null)` helper** returns the
+  buttons grouped by zone (keys = 9 zone slugs, values = arrays of
+  resolved buttons). Unknown / empty positions fall into `center`.
+  Sibling to `hero_buttons()` — pick whichever fits the blade.
+- **`hero_buttons()` now exposes `position`** on each returned row so
+  consumers that don't use `_zones()` can still branch on it.
+
+### Note
+The `position` sub-field is a plain text input in admin — the array
+editor doesn't render a `select` dropdown yet for array item fields.
+Copy the value from the label hint. Proper dropdown ships once
+`BlockDataEditor.vue` gains `select` sub-type support (and consumer
+assets are rebuilt).
+
 ## [0.45.0] — 2026-04-20
 
 ### Added

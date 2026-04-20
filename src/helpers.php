@@ -41,6 +41,9 @@ if (!function_exists('hero_buttons')) {
      *         {{ $btn['text'] }}
      *     </a>
      *   @endforeach
+     *
+     * For positional layouts (corners / edges), use `hero_buttons_zones`
+     * to pick buttons per zone.
      */
     function hero_buttons(array $data, ?string $locale = null): array
     {
@@ -64,14 +67,42 @@ if (!function_exists('hero_buttons')) {
             if (empty($text) || empty($b['url'])) continue;
 
             $out[] = [
-                'text'   => (string) $text,
-                'url'    => (string) $b['url'],
-                'icon'   => $b['icon']   ?? null,
-                'style'  => $b['style']  ?? null,
-                'target' => $b['target'] ?? '_self',
+                'text'     => (string) $text,
+                'url'      => (string) $b['url'],
+                'icon'     => $b['icon']     ?? null,
+                'style'    => $b['style']    ?? null,
+                'target'   => $b['target']   ?? '_self',
+                'position' => $b['position'] ?? 'center',
             ];
         }
         return $out;
+    }
+}
+
+if (!function_exists('hero_buttons_zones')) {
+    /**
+     * Same as `hero_buttons`, but grouped by the `position` field so the
+     * blade can lay out each zone independently (corners with `absolute`,
+     * center in the normal flow, etc.). Returns an array keyed by the
+     * 9 supported zones — unknown / missing positions fall into `center`.
+     *
+     *   $zones = hero_buttons_zones($heroData);
+     *   @foreach ($zones['top-right'] ?? [] as $btn) ... @endforeach
+     */
+    function hero_buttons_zones(array $data, ?string $locale = null): array
+    {
+        $allowed = [
+            'top-left', 'top-center', 'top-right',
+            'center-left', 'center', 'center-right',
+            'bottom-left', 'bottom-center', 'bottom-right',
+        ];
+
+        $zones = array_fill_keys($allowed, []);
+        foreach (hero_buttons($data, $locale) as $b) {
+            $pos = in_array($b['position'], $allowed, true) ? $b['position'] : 'center';
+            $zones[$pos][] = $b;
+        }
+        return $zones;
     }
 }
 
