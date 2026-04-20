@@ -142,6 +142,21 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::patch( '/leads/{id}/status', [\Meta\AdminCore\Http\Controllers\LeadController::class, 'updateStatus'])->name('leads.update-status');
     Route::delete('/leads/{id}',        [\Meta\AdminCore\Http\Controllers\LeadController::class, 'destroy'])->name('leads.destroy');
 
+    // Rector Q&A workflow — publicly-submitted questions answered and
+    // (optionally) published back to the public site.
+    Route::get(   '/rector-questions',                  [\Meta\AdminCore\Http\Controllers\RectorQuestionController::class, 'index'])->name('rector-questions.index');
+    Route::get(   '/rector-questions/{rectorQuestion}', [\Meta\AdminCore\Http\Controllers\RectorQuestionController::class, 'show'])->name('rector-questions.show');
+    Route::put(   '/rector-questions/{rectorQuestion}', [\Meta\AdminCore\Http\Controllers\RectorQuestionController::class, 'update'])->name('rector-questions.update');
+    Route::delete('/rector-questions/{rectorQuestion}', [\Meta\AdminCore\Http\Controllers\RectorQuestionController::class, 'destroy'])->name('rector-questions.destroy');
+
+    // Admin user management (uses the consumer's User model via
+    // config('auth.providers.users.model'); spatie/laravel-permission required).
+    Route::get(   '/users',              [\Meta\AdminCore\Http\Controllers\UserController::class, 'index'])->name('users.index');
+    Route::post(  '/users',              [\Meta\AdminCore\Http\Controllers\UserController::class, 'store'])->name('users.store');
+    Route::put(   '/users/{user}',       [\Meta\AdminCore\Http\Controllers\UserController::class, 'update'])->name('users.update');
+    Route::patch( '/users/{user}/role',  [\Meta\AdminCore\Http\Controllers\UserController::class, 'updateRole'])->name('users.update-role');
+    Route::delete('/users/{user}',       [\Meta\AdminCore\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
+
     // Site-wide specialised settings (social links, rector contact, secondary logo, menu toggles).
     Route::get( '/site-settings',                 [\Meta\AdminCore\Http\Controllers\SiteSettingsController::class, 'index'])->name('site-settings.index');
     Route::put( '/site-settings/social-media',    [\Meta\AdminCore\Http\Controllers\SiteSettingsController::class, 'updateSocialMedia'])->name('site-settings.social-media');

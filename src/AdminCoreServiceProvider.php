@@ -118,6 +118,7 @@ class AdminCoreServiceProvider extends ServiceProvider
                     }
                 }
 
+                $core->menuItem('Вопросы ректору', "/{$prefix}/rector-questions", 'fa-circle-question',  'Контент', 70);
                 $core->menuItem('Заявки',     "/{$prefix}/leads",         'fa-inbox',            'Система', 90);
                 $core->menuItem('Активность', "/{$prefix}/activity",      'fa-clock-rotate-left','Система', 91);
                 $core->menuItem('Бэкапы',     "/{$prefix}/backup",        'fa-box-archive',      'Система', 92);
@@ -134,11 +135,12 @@ class AdminCoreServiceProvider extends ServiceProvider
                 $core->menuItem('Словари',    "/{$prefix}/taxonomies", 'fa-tags',          'Контент', 60);
                 $core->menuItem('Формы',      "/{$prefix}/forms",      'fa-square-check', 'Контент', 65);
 
-                // Permissions matrix — surfaced only if the consumer
-                // has spatie/laravel-permission, since the controller
-                // hard-requires it.
+                // Permissions matrix + Users — surfaced only if the
+                // consumer has spatie/laravel-permission, since both
+                // controllers hard-require it.
                 if (class_exists(\Spatie\Permission\Models\Role::class)) {
-                    $core->menuItem('Доступы', "/{$prefix}/permissions", 'fa-user-shield', 'Система', 97);
+                    $core->menuItem('Пользователи', "/{$prefix}/users",       'fa-users',        'Система', 96);
+                    $core->menuItem('Доступы',      "/{$prefix}/permissions", 'fa-user-shield',  'Система', 97);
                 }
             }
         });

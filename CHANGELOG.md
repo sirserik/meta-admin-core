@@ -5,6 +5,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.44.0] — 2026-04-20
+
+### Added
+- **Admin user management** at `/admin/users` — list, create, edit,
+  delete users and sync their spatie role. Model-agnostic: resolves
+  the user class via `config('auth.providers.users.model')` so
+  consumers keep their own `App\Models\User` with site-specific
+  traits. Supports name/email search + role filter, unique-email
+  guard on update (excluding current record), optional password
+  change, self-delete guard. Like the permissions matrix this is a
+  spatie-gated feature — the menu item only appears when
+  `spatie/laravel-permission` is installed, and the controller
+  `abort_unless` guards every method otherwise.
+- **Rector Q&A workflow** at `/admin/rector-questions` — index/show/
+  update/destroy for publicly-submitted questions to the rector.
+  Filters: full-text search (first/last/email/subject/question),
+  status (new/in_review/answered/rejected), category (education/
+  research/international/youth/general). Tab counters (total/new/
+  answered) for the Index header. Show page writes the answer,
+  toggles publish, and auto-stamps `answered_at` when a question
+  transitions to `answered`. Ships the `rector_questions` migration
+  (guarded by `Schema::hasTable` so consumers that already created
+  the table before v0.44 are skipped cleanly) and
+  `Meta\AdminCore\Models\RectorQuestion` with `published()` /
+  `newQuestions()` scopes plus `full_name` / `category_label`
+  accessors.
+
+### Changed
+- Menu: adds «Вопросы ректору» under «Контент» (order 70) and
+  «Пользователи» under «Система» (order 96, spatie-gated).
+
 ## [0.43.0] — 2026-04-19
 
 ### Added
