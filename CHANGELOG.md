@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.48.0] — 2026-04-20
+
+### Changed
+- **Hero buttons URL field upgraded to `file` sub-type.** Editors can
+  now paste an external URL / internal path OR upload a local file
+  (PDF, DOC, XLS, ZIP, etc.) straight from the admin — the same UX
+  used by `info-cards` / link-blocks. Uploaded file's URL is stored
+  in the same `url` key, so `hero_buttons()` / `hero_buttons_zones()`
+  / blade templates keep working without any change. Field label
+  renamed to «Ссылка / Файл».
+- No Vue changes — the `file` sub-type existed since v0.21.1.
+
 ## [0.47.0] — 2026-04-20
 
 ### Added

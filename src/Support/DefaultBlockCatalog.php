@@ -299,7 +299,7 @@ class DefaultBlockCatalog implements BlockCatalog
                     'type'  => 'array',
                     'item_fields' => [
                         ['key' => 'text',     'label' => 'Текст',           'type' => 'translatable'],
-                        ['key' => 'url',      'label' => 'Ссылка',          'type' => 'url'],
+                        ['key' => 'url',      'label' => 'Ссылка / Файл',   'type' => 'file'],
                         ['key' => 'icon',     'label' => 'Иконка (FA-класс)', 'type' => 'text'],
                         ['key' => 'style',    'label' => 'CSS-класс стиля',   'type' => 'text'],
                         ['key' => 'target',   'label' => 'target (_self / _blank)', 'type' => 'text'],
