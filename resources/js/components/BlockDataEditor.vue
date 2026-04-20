@@ -439,6 +439,18 @@ function openPreview(url, filename) {
                                     </button>
                                 </div>
 
+                                <select v-else-if="sub.type === 'select'"
+                                    :value="row[sub.key] ?? ''"
+                                    @change="e => updateRow(field, i, sub.key, e.target.value)"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                                    <option value="">—</option>
+                                    <option v-for="opt in (sub.options || [])"
+                                        :key="(opt && opt.value !== undefined) ? opt.value : opt"
+                                        :value="(opt && opt.value !== undefined) ? opt.value : opt">
+                                        {{ (opt && opt.label) ? opt.label : ((opt && opt.value !== undefined) ? opt.value : opt) }}
+                                    </option>
+                                </select>
+
                                     <input v-else :type="sub.type === 'url' ? 'url' : sub.type === 'number' ? 'number' : 'text'"
                                         :value="row[sub.key] ?? ''"
                                         @input="e => updateRow(field, i, sub.key, e.target.value)"

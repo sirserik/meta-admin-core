@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.47.0] — 2026-04-20
+
+### Added
+- **`select` sub-field type in `BlockDataEditor.vue`** — array items
+  can now declare `type => 'select'` with an `options` array
+  (`[{value, label}]` or plain strings) and the editor renders a real
+  dropdown. Falls back to `—` when empty. Old bundles still work
+  (the select branch fell through to the default text input before).
+- **Hero buttons `position` is now a proper dropdown.** The 9 zones
+  come with human-readable Russian labels in admin (Сверху слева /
+  Сверху по центру / …). Backend slugs stay the same, so blade code
+  using `hero_buttons_zones()` keeps working.
+
+### Note for consumers
+The Vue editor changed, so consumers must rebuild their admin bundle
+(`npm run build`) to get the dropdown UI. Without a rebuild the
+position field stays a plain text input — still writes the same slug,
+just worse UX.
+
 ## [0.46.0] — 2026-04-20
 
 ### Added
