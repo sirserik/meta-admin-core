@@ -5,6 +5,39 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.45.0] — 2026-04-20
+
+### Added
+- **Hero buttons repeater.** The `hero` block schema now includes an
+  admin-editable `buttons[]` array so editors can add, remove and
+  reorder CTAs without a code change. Each row has: `text`
+  (multilingual — `translatable` sub-field, one string per locale),
+  `url`, `icon` (FontAwesome class), `style` (raw CSS class string),
+  `target` (`_self` / `_blank`). To disable a button — delete the
+  row or clear its text in the target locale. Buttons render in
+  order.
+- **`hero_buttons($data, $locale = null)` helper** in the global
+  namespace. Resolves the array into a locale-rendered list (drops
+  rows without text or url, picks `text[locale]` with fallback to
+  `app.fallback_locale` then the first non-empty value). Intended
+  Blade usage:
+  ```blade
+  @foreach (hero_buttons($heroData) as $btn)
+      <a href="{{ $btn['url'] }}" target="{{ $btn['target'] }}"
+         class="{{ $btn['style'] }}">
+          @if ($btn['icon']) <i class="{{ $btn['icon'] }}"></i> @endif
+          {{ $btn['text'] }}
+      </a>
+  @endforeach
+  ```
+
+### Note for consumers
+Schema change is **additive** — legacy `cta_label` / `cta_url` fields
+stay in place and continue to render in any blade that reads them
+directly. Adopt `buttons[]` per-page (or per-site) at your pace:
+populate the array (via admin UI, seeder, or tinker), then switch
+the corresponding blade to `hero_buttons()`.
+
 ## [0.44.0] — 2026-04-20
 
 ### Added

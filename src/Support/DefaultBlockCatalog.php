@@ -291,8 +291,20 @@ class DefaultBlockCatalog implements BlockCatalog
         'hero' => [
             'items' => [
                 ['key' => 'image',     'label' => 'Фоновое изображение', 'type' => 'image'],
-                ['key' => 'cta_label', 'label' => 'Текст кнопки',         'type' => 'text'],
-                ['key' => 'cta_url',   'label' => 'Ссылка кнопки',        'type' => 'url'],
+                ['key' => 'cta_label', 'label' => 'Текст кнопки (legacy, одна)', 'type' => 'text'],
+                ['key' => 'cta_url',   'label' => 'Ссылка кнопки (legacy)',      'type' => 'url'],
+                [
+                    'key'   => 'buttons',
+                    'label' => 'Кнопки',
+                    'type'  => 'array',
+                    'item_fields' => [
+                        ['key' => 'text',   'label' => 'Текст',           'type' => 'translatable'],
+                        ['key' => 'url',    'label' => 'Ссылка',          'type' => 'url'],
+                        ['key' => 'icon',   'label' => 'Иконка (FA-класс)', 'type' => 'text'],
+                        ['key' => 'style',  'label' => 'CSS-класс стиля',   'type' => 'text'],
+                        ['key' => 'target', 'label' => 'target (_self / _blank)', 'type' => 'text'],
+                    ],
+                ],
             ],
         ],
         'hero-slides' => [

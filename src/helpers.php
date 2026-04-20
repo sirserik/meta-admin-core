@@ -28,6 +28,53 @@ if (!function_exists('page_block')) {
     }
 }
 
+if (!function_exists('hero_buttons')) {
+    /**
+     * Resolve a hero block's `buttons[]` array for rendering in the
+     * current (or given) locale. Filters out buttons without text or
+     * url. `text` may be a plain string or a `{locale: value}` map.
+     *
+     *   @foreach (hero_buttons($heroData) as $btn)
+     *     <a href="{{ $btn['url'] }}" target="{{ $btn['target'] }}"
+     *        class="{{ $btn['style'] }}">
+     *         @if($btn['icon']) <i class="{{ $btn['icon'] }}"></i> @endif
+     *         {{ $btn['text'] }}
+     *     </a>
+     *   @endforeach
+     */
+    function hero_buttons(array $data, ?string $locale = null): array
+    {
+        $locale   = $locale ?? app()->getLocale();
+        $fallback = config('app.fallback_locale', 'ru');
+        $out      = [];
+
+        foreach (($data['buttons'] ?? []) as $b) {
+            if (!is_array($b)) continue;
+
+            $raw = $b['text'] ?? null;
+            if (is_array($raw)) {
+                $text = $raw[$locale] ?? $raw[$fallback] ?? null;
+                if ($text === null) {
+                    foreach ($raw as $v) { if (!empty($v)) { $text = $v; break; } }
+                }
+            } else {
+                $text = $raw;
+            }
+
+            if (empty($text) || empty($b['url'])) continue;
+
+            $out[] = [
+                'text'   => (string) $text,
+                'url'    => (string) $b['url'],
+                'icon'   => $b['icon']   ?? null,
+                'style'  => $b['style']  ?? null,
+                'target' => $b['target'] ?? '_self',
+            ];
+        }
+        return $out;
+    }
+}
+
 if (!function_exists('media_url')) {
     /**
      * Build a public URL to a storage file.
