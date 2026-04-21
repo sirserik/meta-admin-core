@@ -2,7 +2,10 @@
 
 namespace Meta\AdminCore\Content;
 
+use ArrayAccess;
 use Illuminate\Support\Collection;
+use IteratorAggregate;
+use Traversable;
 
 /**
  * Fluent query builder over `page_blocks` that returns augmented
@@ -22,11 +25,16 @@ use Illuminate\Support\Collection;
  *   // Grab a single block
  *   $hero = PageBlockResolver::forPage('home')->block('hero');
  *
+ * Also supports array-access and iteration directly on the resolver — the
+ * first such read materializes the underlying collection, so
+ * `$blocks['hero']` or `@foreach ($blocks as $b)` just work after
+ * `page_blocks($page)` without an explicit `->get()` call.
+ *
  * Backwards compatible: falls back to the consumer's
  * `App\Models\PageBlock` if present, else uses the package model. Eager-
  * loads translations so inner `translate()` calls don't fan out to N+1.
  */
-class PageBlockResolver
+class PageBlockResolver implements ArrayAccess, IteratorAggregate
 {
     protected string $page;
     protected string $locale;
@@ -35,6 +43,8 @@ class PageBlockResolver
     protected array $onlyKeys = [];
     /** @var array<int, string> */
     protected array $onlyTypes = [];
+    /** @var Collection<string, PresentedBlock>|null */
+    protected ?Collection $resolved = null;
 
     private function __construct() {}
 
@@ -79,6 +89,10 @@ class PageBlockResolver
      */
     public function get(): Collection
     {
+        if ($this->resolved !== null && $this->onlyKeys === [] && $this->onlyTypes === []) {
+            return $this->resolved;
+        }
+
         $modelClass = $this->blockModel();
         $query = $modelClass::query()
             ->where('page_name', $this->page)
@@ -90,16 +104,48 @@ class PageBlockResolver
         if ($this->onlyKeys)       $query->whereIn('block_key', $this->onlyKeys);
         if ($this->onlyTypes)      $query->whereIn('block_type', $this->onlyTypes);
 
-        return $query->get()
+        $collection = $query->get()
             ->map(fn ($b) => self::present($b, $this->locale))
             ->keyBy(fn (PresentedBlock $b) => $b->key);
+
+        if ($this->onlyKeys === [] && $this->onlyTypes === []) {
+            $this->resolved = $collection;
+        }
+        return $collection;
     }
 
     /** Shortcut: resolve a single block by key, or null if missing. */
     public function block(string $key): ?PresentedBlock
     {
-        $this->onlyKeys = [$key];
-        return $this->get()->first();
+        if ($this->resolved !== null) {
+            return $this->resolved->get($key);
+        }
+
+        $clone = clone $this;
+        $clone->onlyKeys = [$key];
+        return $clone->get()->first();
+    }
+
+    /* --- ArrayAccess + IteratorAggregate: let templates treat the resolver
+       itself as the materialized collection without calling ->get() first.
+       Mutating operations are a no-op: blocks are read-only at render time. */
+
+    public function offsetExists(mixed $offset): bool
+    {
+        return $this->get()->has($offset);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return $this->get()->get($offset);
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void {}
+    public function offsetUnset(mixed $offset): void {}
+
+    public function getIterator(): Traversable
+    {
+        return $this->get()->getIterator();
     }
 
     /**

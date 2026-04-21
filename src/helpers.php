@@ -4,11 +4,17 @@ if (!function_exists('page_blocks')) {
     /**
      * Terse Statamic-style accessor for augmented page blocks.
      *
-     *   page_blocks('home')->get('hero')->title
-     *   page_blocks('sdg-resources')->get('main_links')->links
+     *   page_blocks('home')['hero']?->title          // array access, auto-materialized
+     *   page_blocks('home')->block('hero')?->title   // explicit single-block shortcut
+     *   @foreach (page_blocks('home') as $b) ... @endforeach
+     *
+     *   // Full collection (keyed by block_key) for advanced ops
+     *   page_blocks('home')->get()->pluck('title');
      *
      * Returns the resolver so you can chain `locale()`, `withDrafts()`,
-     * `only()`, `types()` before `get()` / `block()`.
+     * `only()`, `types()` before accessing results. The resolver itself
+     * implements ArrayAccess + IteratorAggregate, so templates rarely need
+     * to call `->get()` explicitly.
      */
     function page_blocks(string $page): \Meta\AdminCore\Content\PageBlockResolver
     {
