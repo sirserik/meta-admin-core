@@ -44,6 +44,41 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Off-band admin password recovery (PIN-gated)
+    |--------------------------------------------------------------------------
+    |
+    | Two-step rescue flow for admins locked out of the normal mail-based
+    | password reset. Set ADMIN_RESET_PIN to a long random string in .env
+    | to enable — when blank the /admin/recover routes 404, so the feature
+    | isn't advertised on servers that don't want it.
+    |
+    |   1. GET  {prefix}/recover          → PIN form
+    |   2. POST {prefix}/recover          → verify PIN, stash verified-at
+    |                                       in the session for `verified_ttl`
+    |   3. GET  {prefix}/recover/password → new-password form (gated)
+    |   4. POST {prefix}/recover/password → update user, consume session flag
+    |
+    | Security:
+    |   - constant-time PIN compare (hash_equals over sha256)
+    |   - per-IP rate limit on both POSTs (see `admin-recovery` limiter)
+    |   - minimum PIN length (8) checked at feature-gate time
+    |   - optional role allowlist (default admin/super-admin) so the flow
+    |     can only reset privileged accounts
+    |   - every attempt (success + failure) logged via the default channel
+    |
+    */
+    'recovery' => [
+        'pin'            => env('ADMIN_RESET_PIN'),
+        'min_pin_length' => 8,
+        'verified_ttl'   => (int) env('ADMIN_RESET_VERIFIED_TTL', 300),
+        'pin_attempts'   => (int) env('ADMIN_RESET_PIN_ATTEMPTS', 5),
+        'pin_decay'      => (int) env('ADMIN_RESET_PIN_DECAY', 3600),
+        'password_min'   => (int) env('ADMIN_RESET_PASSWORD_MIN', 12),
+        'allowed_roles'  => ['admin', 'super-admin'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Feature toggles — enable/disable optional admin modules per site.
     |
     | Consumer apps read these in AppServiceProvider::registerAdminResources()

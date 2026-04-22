@@ -2,7 +2,10 @@
 
 namespace Meta\AdminCore;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -38,6 +41,26 @@ class AdminCoreServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Admin recovery: rate limiter + middleware alias + routes. Limiter
+        // and alias registered unconditionally so the `throttle:admin-recovery`
+        // middleware reference in routes/recovery.php always resolves —
+        // the controller itself 404s when ADMIN_RESET_PIN is blank, so the
+        // feature stays invisible on un-configured sites.
+        RateLimiter::for('admin-recovery', function (Request $r) {
+            $attempts = (int) config('admin-core.recovery.pin_attempts', 5);
+            $decay    = max(60, (int) config('admin-core.recovery.pin_decay', 3600));
+            return Limit::perMinutes((int) ceil($decay / 60), $attempts)->by($r->ip());
+        });
+
+        if (method_exists($this->app['router'], 'aliasMiddleware')) {
+            $this->app['router']->aliasMiddleware(
+                'admin-core.recovery.pin',
+                \Meta\AdminCore\Http\Middleware\EnsureRecoveryPinVerified::class
+            );
+        }
+
+        $this->loadRoutesFrom(__DIR__ . '/../routes/recovery.php');
+
         // Console commands
         if ($this->app->runningInConsole()) {
             $this->commands([

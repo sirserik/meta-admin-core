@@ -73,6 +73,7 @@
 27. [Расширение Vue-интерфейса](./27-extending-admin-ui.md)
 28. [Тестирование](./28-testing.md)
 29. [Траблшутинг](./29-troubleshooting.md)
+30. [Admin recovery (PIN-gated)](./30-admin-recovery.md) — off-band сброс пароля админа через PIN из `.env`
 
 ---
 
