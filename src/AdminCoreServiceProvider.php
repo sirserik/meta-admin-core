@@ -182,6 +182,13 @@ class AdminCoreServiceProvider extends ServiceProvider
         // Blade root view namespace
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'admin-core');
 
+        // Anonymous Blade components under the `admin-core::` namespace.
+        // Consumer templates use e.g. <x-admin-core::documents :items="…"/>.
+        \Illuminate\Support\Facades\Blade::anonymousComponentNamespace(
+            __DIR__ . '/../resources/views/components',
+            'admin-core'
+        );
+
         // Publishable config
         $this->publishes([
             __DIR__ . '/../config/admin-core.php' => config_path('admin-core.php'),

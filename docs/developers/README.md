@@ -74,6 +74,7 @@
 28. [Тестирование](./28-testing.md)
 29. [Траблшутинг](./29-troubleshooting.md)
 30. [Admin recovery (PIN-gated)](./30-admin-recovery.md) — off-band сброс пароля админа через PIN из `.env`
+31. [`document-list` block type](./31-document-list.md) — канонический блок «список документов/ссылок» + `<x-admin-core::documents>` компонент
 
 ---
 

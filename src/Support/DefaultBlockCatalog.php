@@ -122,10 +122,17 @@ class DefaultBlockCatalog implements BlockCatalog
         'achievements'     => ['label' => 'Достижения',              'description' => 'Карточки достижений с изображениями, описанием и бейджами',    'icon' => 'fa-trophy',     'category' => 'Сетки', 'preview' => '🏆 ▢'],
 
         // ---------- CTA / Ссылки ----------
-        'cta'          => ['label' => 'Призыв к действию',    'description' => 'Контрастный блок с кнопкой — подать заявку, связаться и т.п.', 'icon' => 'fa-bullhorn',  'category' => 'CTA', 'preview' => '▶ Кнопка'],
-        'cta-contacts' => ['label' => 'CTA с контактами',      'description' => 'Призыв к действию + телефон/email/адрес',                      'icon' => 'fa-phone',     'category' => 'CTA', 'preview' => '☎ ▶'],
-        'quick-links'  => ['label' => 'Быстрые ссылки',        'description' => 'Набор кнопок-ссылок для навигации по разделам',                'icon' => 'fa-link',      'category' => 'CTA', 'preview' => '→ → →'],
-        'links'        => ['label' => 'Документы / Ссылки',    'description' => 'Список прикреплённых документов или внешних ссылок',          'icon' => 'fa-paperclip', 'category' => 'CTA', 'preview' => '📎 📎'],
+        'cta'           => ['label' => 'Призыв к действию',    'description' => 'Контрастный блок с кнопкой — подать заявку, связаться и т.п.', 'icon' => 'fa-bullhorn',  'category' => 'CTA', 'preview' => '▶ Кнопка'],
+        'cta-contacts'  => ['label' => 'CTA с контактами',      'description' => 'Призыв к действию + телефон/email/адрес',                      'icon' => 'fa-phone',     'category' => 'CTA', 'preview' => '☎ ▶'],
+        'quick-links'   => ['label' => 'Быстрые ссылки',        'description' => 'Набор кнопок-ссылок для навигации по разделам',                'icon' => 'fa-link',      'category' => 'CTA', 'preview' => '→ → →'],
+        // Канонический блок «список документов / ссылок». Заменяет кучу
+        // исторических вариантов (links, downloadable-docs, admission-documents,
+        // accreditation-documents, grid-documents, download, …) — у всех одна
+        // и та же потребность: заголовок + layout + набор файлов/ссылок с
+        // иконками и описанием. Новые страницы используют `document-list`,
+        // старые блоки остаются работать по back-compat aliases.
+        'document-list' => ['label' => 'Документы / ссылки',    'description' => 'Универсальный список документов и ссылок: загрузка файлов, превью, мультиязычные названия и URL, раскладки grid/list/cards', 'icon' => 'fa-folder-open', 'category' => 'CTA', 'preview' => '📎 📎 📎'],
+        'links'         => ['label' => 'Документы / Ссылки (legacy)', 'description' => 'Устаревший вариант — используй document-list',              'icon' => 'fa-paperclip', 'category' => 'CTA', 'preview' => '📎 📎'],
 
         // ---------- Галерея / Медиа ----------
         'gallery'         => ['label' => 'Галерея',           'description' => 'Сетка изображений с подписями',          'icon' => 'fa-images',       'category' => 'Медиа', 'preview' => '▢ ▢ ▢'],
@@ -465,6 +472,49 @@ class DefaultBlockCatalog implements BlockCatalog
                 ],
             ],
         ],
+        // Канонический список документов/ссылок. ВСЕ новые use-case'ы
+        // должны использовать его вместо разрозненных `links`, `downloadable-docs`,
+        // `admission-documents`, `accreditation-documents`. На рендере —
+        // компонент `<x-admin-core::documents>` в одном файле, он знает
+        // все layouts.
+        'document-list' => [
+            'items' => [
+                [
+                    'key' => 'layout', 'label' => 'Раскладка', 'type' => 'select',
+                    'options' => [
+                        ['value' => 'grid-3',  'label' => 'Сетка 3 колонки (по умолчанию)'],
+                        ['value' => 'grid-2',  'label' => 'Сетка 2 колонки'],
+                        ['value' => 'grid-4',  'label' => 'Сетка 4 колонки'],
+                        ['value' => 'list',    'label' => 'Список (одна колонка)'],
+                        ['value' => 'cards',   'label' => 'Карточки с фоном'],
+                    ],
+                ],
+                ['key' => 'description', 'label' => 'Описание секции', 'type' => 'translatable_textarea'],
+                [
+                    'key' => 'items', 'label' => 'Документы / ссылки', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'icon',  'label' => 'Иконка (FA)', 'type' => 'text', 'placeholder' => 'fas fa-file-pdf'],
+                        ['key' => 'color', 'label' => 'Цвет', 'type' => 'select',
+                            'options' => [
+                                ['value' => '',       'label' => '— по умолчанию —'],
+                                ['value' => 'red',    'label' => 'Красный'],
+                                ['value' => 'blue',   'label' => 'Синий'],
+                                ['value' => 'green',  'label' => 'Зелёный'],
+                                ['value' => 'gold',   'label' => 'Золотой'],
+                                ['value' => 'purple', 'label' => 'Фиолетовый'],
+                                ['value' => 'gray',   'label' => 'Серый'],
+                            ],
+                        ],
+                        ['key' => 'title',       'label' => 'Название',   'type' => 'translatable'],
+                        ['key' => 'description', 'label' => 'Описание',   'type' => 'translatable_textarea'],
+                        ['key' => 'url',         'label' => 'URL / файл', 'type' => 'translatable_file'],
+                    ],
+                ],
+            ],
+        ],
+
+        // Legacy, оставлен для обратной совместимости — новые блоки
+        // используют `document-list`.
         'links' => [
             'items' => [
                 ['key' => 'layout', 'label' => 'Layout', 'type' => 'text', 'placeholder' => 'grid / list'],
