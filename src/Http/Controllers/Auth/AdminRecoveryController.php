@@ -26,18 +26,16 @@ class AdminRecoveryController extends Controller
 {
     public const SESSION_KEY = 'admin_core_recovery_verified_at';
 
-    public function __construct()
-    {
-        abort_if(!self::isEnabled(), 404);
-    }
-
     public function showPinForm(): View
     {
+        $this->ensureEnabled();
         return view('admin-core::auth.recovery-pin');
     }
 
     public function verifyPin(Request $request): RedirectResponse
     {
+        $this->ensureEnabled();
+
         $request->validate([
             'pin' => ['required', 'string', 'max:128'],
         ]);
@@ -65,11 +63,14 @@ class AdminRecoveryController extends Controller
 
     public function showPasswordForm(): View
     {
+        $this->ensureEnabled();
         return view('admin-core::auth.recovery-password');
     }
 
     public function resetPassword(Request $request): RedirectResponse
     {
+        $this->ensureEnabled();
+
         $min  = (int) config('admin-core.recovery.password_min', 12);
         $data = $request->validate([
             'email'    => ['required', 'email', 'max:255'],
@@ -115,6 +116,11 @@ class AdminRecoveryController extends Controller
         $pin = (string) config('admin-core.recovery.pin');
         $min = (int) config('admin-core.recovery.min_pin_length', 8);
         return $pin !== '' && mb_strlen($pin) >= $min;
+    }
+
+    protected function ensureEnabled(): void
+    {
+        abort_if(!self::isEnabled(), 404);
     }
 
     protected function userModel(): string
