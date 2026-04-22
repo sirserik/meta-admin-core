@@ -35,12 +35,81 @@ const ext = computed(() => {
     const dot = n.lastIndexOf('.');
     return dot >= 0 ? n.slice(dot + 1).toLowerCase() : '';
 });
+
+/**
+ * Third-party file hosts that serve real files behind URLs without a file
+ * extension. Drive/Dropbox/YouTube expose embed URLs that render the same
+ * viewer as the web UI — we pipe those through an iframe.
+ *
+ * Returns either null (not a known host → fall back to extension logic)
+ * or `{ kind, embedUrl }` where `kind` is one of 'pdf' | 'image' | 'video'
+ * | 'iframe'.
+ */
+function detectExternal(raw) {
+    if (!raw) return null;
+    let u;
+    try { u = new URL(raw); } catch { return null; }
+    const host = u.hostname.replace(/^www\./, '');
+
+    // Google Drive: /file/d/{ID}/… or ?id={ID}
+    if (host === 'drive.google.com') {
+        const m = u.pathname.match(/\/file\/d\/([^/]+)/) || u.pathname.match(/\/open/);
+        const id = (m && m[1]) || u.searchParams.get('id');
+        if (id) return { kind: 'iframe', embedUrl: `https://drive.google.com/file/d/${id}/preview` };
+    }
+
+    // Google Docs / Sheets / Slides — swap /edit → /preview
+    if (host === 'docs.google.com') {
+        return { kind: 'iframe', embedUrl: raw.replace(/\/edit.*$/, '/preview') };
+    }
+
+    // Dropbox: replace ?dl=0 with ?raw=1 so it renders inline
+    if (host === 'dropbox.com' || host.endsWith('.dropbox.com')) {
+        const fixed = raw.replace(/([?&])dl=\d/, '$1raw=1');
+        return { kind: 'iframe', embedUrl: /raw=1/.test(fixed) ? fixed : fixed + (fixed.includes('?') ? '&' : '?') + 'raw=1' };
+    }
+
+    // YouTube — embed player
+    if (host === 'youtube.com' || host === 'youtu.be') {
+        const id = host === 'youtu.be'
+            ? u.pathname.slice(1)
+            : u.searchParams.get('v') || u.pathname.split('/').filter(Boolean).pop();
+        if (id) return { kind: 'iframe', embedUrl: `https://www.youtube.com/embed/${id}` };
+    }
+
+    // Vimeo
+    if (host === 'vimeo.com') {
+        const id = u.pathname.split('/').filter(Boolean).pop();
+        if (id && /^\d+$/.test(id)) return { kind: 'iframe', embedUrl: `https://player.vimeo.com/video/${id}` };
+    }
+
+    // Office 365 / OneDrive — file URLs served via onedrive.live.com use ?resid=
+    if (host === '1drv.ms' || host.endsWith('onedrive.live.com')) {
+        return { kind: 'iframe', embedUrl: raw.replace('/redir?', '/embed?') };
+    }
+
+    return null;
+}
+
+const external = computed(() => detectExternal(url.value));
+
 const kind = computed(() => {
+    if (external.value) return external.value.kind;
     if (ext.value === 'pdf') return 'pdf';
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'].includes(ext.value)) return 'image';
     if (['mp4', 'webm', 'ogg', 'mov'].includes(ext.value)) return 'video';
     if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext.value)) return 'audio';
+    // Office file types — route through Office Web Viewer for inline display
+    if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext.value)) return 'office';
     return 'other';
+});
+
+const embedUrl = computed(() => {
+    if (external.value?.embedUrl) return external.value.embedUrl;
+    if (kind.value === 'office') {
+        return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url.value)}`;
+    }
+    return url.value;
 });
 const filename = computed(() => {
     if (name.value) return name.value;
@@ -80,7 +149,11 @@ const filename = computed(() => {
 
                     <!-- Body -->
                     <div class="flex-1 min-h-0 bg-gray-100 dark:bg-gray-900">
-                        <iframe v-if="kind === 'pdf'" :src="url" class="w-full h-full bg-white"></iframe>
+                        <iframe v-if="kind === 'pdf' || kind === 'iframe' || kind === 'office'"
+                                :src="embedUrl"
+                                class="w-full h-full bg-white"
+                                allow="autoplay; encrypted-media"
+                                allowfullscreen></iframe>
 
                         <div v-else-if="kind === 'image'" class="w-full h-full flex items-center justify-center p-6 overflow-auto">
                             <img :src="url" :alt="filename" class="max-w-full max-h-full object-contain rounded shadow">
