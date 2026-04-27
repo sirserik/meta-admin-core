@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.51.3] — 2026-04-27
+
+### Fixed
+- **`admin-core:migrate-to-document-list`** теперь после успешной миграции
+  делает smoke-check consumer-вьюшек и предупреждает (с готовым diff'ом),
+  если в `resources/views/components/page-blocks.blade.php` нет
+  `@case('document-list')` рядом с `@case('links')`, или если
+  `types/links.blade.php` не читает `$block->items` как fallback.
+  Раньше команда переименовывала `block_type` в БД молча, и без правки
+  consumer-views мигрированные блоки тихо переставали рендериться (как
+  это случилось на ETU/meta.edu.kz 2026-04-22 — исчезли все ссылки на
+  документы на sdg-resources, library, electronic-resources, about).
+  Команда сама не патчит файлы (каждый сайт держит свой switch — у etec
+  он 5128 строк, у ETU 386 — generic-патчер был бы хрупкий), а печатает
+  copy-paste diff с точными правками.
+
+### Added
+- **`docs/MIGRATING-DOCUMENT-LIST.md`** — пошаговая инструкция: dry-run,
+  apply, обязательные правки `page-blocks.blade.php` и `types/links.blade.php`,
+  re-run safety, ссылки на референсный фикс в ETU.
+
 ## [0.48.0] — 2026-04-20
 
 ### Changed
