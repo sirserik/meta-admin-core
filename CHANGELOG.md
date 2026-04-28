@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.51.5] — 2026-04-28
+
+### Fixed
+- **Block form: page select preserves synthetic page_name on edit.**
+  When a block lives on a page that isn't listed in `BlockCatalog::PAGES`
+  (e.g. polymorphic `procurement-{id}` rows that ETU's Procurement
+  module attaches via `page_blocks.blockable_type/_id`), the page-select
+  found no matching `<option>` and silently reset to "" — pressing
+  «Сохранить» without touching anything would then fail validation
+  with «выбери страницу». The select now appends a synthetic option
+  «{page_name} (текущая)» whenever the current value isn't in the
+  catalog, so existing blocks keep their binding through edit/save.
+  Sites that paginate per-entity blocks (procurements, programs,
+  whatever) no longer need to register every synthetic page-name in
+  the catalog just to make the editor save without bouncing.
+
 ## [0.51.4] — 2026-04-28
 
 ### Fixed

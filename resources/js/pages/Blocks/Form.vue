@@ -126,6 +126,13 @@ const currentSchema = computed(() => {
     return (dataType && props.schemas[dataType]) || props.schemas[form.block_type] || null;
 });
 
+function isPageInCatalog(slug) {
+    for (const group in (props.pagesGrouped || {})) {
+        if (Object.prototype.hasOwnProperty.call(props.pagesGrouped[group] || {}, slug)) return true;
+    }
+    return false;
+}
+
 function validateJson(v) {
     if (!v || !v.trim()) return '';
     try { JSON.parse(v); return ''; } catch (e) { return 'Невалидный JSON: ' + e.message; }
@@ -429,6 +436,12 @@ function onPickerOpen() {
                             <optgroup v-for="(pages, group) in pagesGrouped" :key="group" :label="group">
                                 <option v-for="(label, slug) in pages" :key="slug" :value="slug">{{ label }}</option>
                             </optgroup>
+                            <!-- Synthetic page_name (e.g. `procurement-6`) — keep block bound
+                                 to its current page even if BlockCatalog doesn't list it. -->
+                            <option v-if="form.page_name && !isPageInCatalog(form.page_name)"
+                                    :value="form.page_name">
+                                {{ form.page_name }} (текущая)
+                            </option>
                         </select>
                         <p v-if="form.errors.page_name" class="text-xs text-red-500 mt-1">{{ form.errors.page_name }}</p>
                     </div>
