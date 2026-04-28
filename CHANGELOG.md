@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.51.4] — 2026-04-28
+
+### Fixed
+- **Block form: schema lookup falls back through `data.type`.**
+  `pages/Blocks/Form.vue` previously matched a block's data schema by
+  `block_type` only, so blocks that internally split shapes via
+  `data.type` (e.g. a single `block_type='content'` row carrying
+  `data.type='clubs-grid'`, `'text-card'`, …) could never get a
+  proper visual editor — they fell through to the JSON textarea even
+  when a schema was registered under their data-type key. Now
+  `currentSchema` is resolved by `data.type` first, then `block_type`,
+  so a partner-grid block edited as `content/clubs-grid` (legacy) and
+  a future `clubs-grid`-typed block both pick up the same schema.
+  Consumer sites must `npm run build` to ship the new admin bundle.
+
 ## [0.51.3] — 2026-04-27
 
 ### Fixed

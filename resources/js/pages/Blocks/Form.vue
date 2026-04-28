@@ -106,7 +106,25 @@ const currentTypeInfo = computed(() =>
 
 // Current block type's data schema (from BlockCatalog). When present,
 // Данные tab shows the visual editor; otherwise falls back to JSON.
-const currentSchema = computed(() => props.schemas[form.block_type] ?? null);
+//
+// Resolution order:
+//   1. data.type (for `content` blocks that internally split by
+//      `data.type` — clubs-grid, text-card, etc.)
+//   2. block_type (canonical case)
+//
+// This lets a single `block_type='content'` row carry several
+// distinct shapes and still get a proper visual editor by registering
+// schemas under the `data.type` key.
+const currentSchema = computed(() => {
+    let dataType = null;
+    try {
+        const parsed = typeof form.blockData === 'string' ? JSON.parse(form.blockData) : form.blockData;
+        if (parsed && typeof parsed === 'object' && typeof parsed.type === 'string') {
+            dataType = parsed.type;
+        }
+    } catch (e) { /* invalid JSON yet — schema can't be picked, fall through */ }
+    return (dataType && props.schemas[dataType]) || props.schemas[form.block_type] || null;
+});
 
 function validateJson(v) {
     if (!v || !v.trim()) return '';
