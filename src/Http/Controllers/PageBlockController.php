@@ -427,6 +427,11 @@ class PageBlockController extends Controller
             'settings'     => $b->settings !== null ? json_encode($b->settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}',
             'created_at'   => optional($b->created_at)->format('d.m.Y H:i'),
             'updated_at'   => optional($b->updated_at)->format('d.m.Y H:i'),
+            // Live-preview iframe URL. Falls back to `/{page_name}` in
+            // Form.vue when null. Consumer registers AdminCore::previewResolver()
+            // to map synthetic page_names (procurement-N, program-N etc.)
+            // to the real public route.
+            'preview_url'  => $b->page_name ? \Meta\AdminCore\Facades\AdminCore::resolvePreviewUrl($b->page_name) : null,
         ]);
     }
 }

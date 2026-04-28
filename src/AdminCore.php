@@ -49,6 +49,9 @@ class AdminCore
 
     protected ?\Meta\AdminCore\Support\SitemapRegistry $sitemap = null;
 
+    /** @var array<int, array{regex: string, resolver: callable}> — preview-URL resolvers */
+    protected array $previewResolvers = [];
+
     /** Name of the feature whose register() is currently executing, if any.
      * Items added while this is set get tagged so the sidebar can style
      * them distinctly. */
@@ -104,6 +107,44 @@ class AdminCore
     public function sitemap(): \Meta\AdminCore\Support\SitemapRegistry
     {
         return $this->sitemap ??= new \Meta\AdminCore\Support\SitemapRegistry();
+    }
+
+    /**
+     * Register a resolver that maps a synthetic block `page_name` to a
+     * public preview URL. Used by the admin block-editor's live-preview
+     * iframe — when the page_name doesn't correspond to a routable URL
+     * (e.g. `procurement-{id}`, `program-{id}` etc.), a resolver yields
+     * the real consumer-side URL to load.
+     *
+     *   AdminCore::previewResolver('/^procurement-(\d+)$/', function ($matches) {
+     *       $p = \App\Models\Procurement::find((int) $matches[1]);
+     *       return $p ? '/procurements/' . $p->slug : null;
+     *   });
+     *
+     * Resolvers are tried in registration order; first non-null wins.
+     */
+    public function previewResolver(string $regex, callable $resolver): self
+    {
+        $this->previewResolvers[] = ['regex' => $regex, 'resolver' => $resolver];
+        return $this;
+    }
+
+    /**
+     * Resolve a preview URL for a `page_name`. Returns null when no
+     * resolver matched — the caller should fall back to the default
+     * `/{page_name}` strategy.
+     */
+    public function resolvePreviewUrl(string $pageName): ?string
+    {
+        foreach ($this->previewResolvers as $entry) {
+            if (preg_match($entry['regex'], $pageName, $m)) {
+                $url = call_user_func($entry['resolver'], $m, $pageName);
+                if (is_string($url) && $url !== '') {
+                    return $url;
+                }
+            }
+        }
+        return null;
     }
 
     public function resource(string $name, array $config): self

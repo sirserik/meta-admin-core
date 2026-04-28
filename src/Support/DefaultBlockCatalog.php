@@ -195,6 +195,11 @@ class DefaultBlockCatalog implements BlockCatalog
         'form'            => ['label' => 'Форма',                'description' => 'Встроенная форма (подача заявки)',         'icon' => 'fa-wpforms',       'category' => 'Системные', 'preview' => '▤'],
         'settings'        => ['label' => 'Настройки',            'description' => 'Конфигурационный блок',                    'icon' => 'fa-cog',           'category' => 'Системные', 'preview' => '⚙'],
         'image'           => ['label' => 'Изображение',          'description' => 'Одно изображение',                         'icon' => 'fa-image',         'category' => 'Системные', 'preview' => '🖼'],
+
+        // ---------- Универсальные (since v0.52.0) ----------
+        'description_table' => ['label' => 'Таблица описаний',         'description' => 'Таблица «описание + дата + ссылка/файл/видео» — типичный реестр документов', 'icon' => 'fa-table-list',   'category' => 'Контент', 'preview' => '▤ ⇨'],
+        'document_group'    => ['label' => 'Группа документов',        'description' => 'Документы (PDF/DOC) с группировкой по категории или году. Раскладки: вкладки/аккордеон/список', 'icon' => 'fa-folder-tree', 'category' => 'CTA',     'preview' => '📁 📁 📁'],
+        'single_image'      => ['label' => 'Крупное изображение/скан', 'description' => 'Одно изображение с zoom по клику (для сканов A4 и т.п.)', 'icon' => 'fa-image', 'category' => 'Медиа', 'preview' => '🖼 ⤢'],
     ];
 
     public function pagesGrouped(): array
@@ -599,6 +604,122 @@ class DefaultBlockCatalog implements BlockCatalog
                 ['key' => 'image', 'label' => 'Изображение', 'type' => 'image'],
                 ['key' => 'url',   'label' => 'Ссылка',      'type' => 'url'],
                 ['key' => 'alt',   'label' => 'Alt-текст',   'type' => 'text'],
+            ],
+        ],
+
+        // ---------- Универсальные (since v0.52.0) ----------
+        'clubs-grid' => [
+            'items' => [
+                [
+                    'key' => 'clubs', 'label' => 'Карточки', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'logo',        'label' => 'Логотип (предпочтительно)', 'type' => 'image',
+                            'help' => 'Картинка логотипа компании. Если задана — заменяет emoji-иконку.'],
+                        ['key' => 'icon',        'label' => 'Emoji-иконка (запасной вариант)', 'type' => 'text',
+                            'placeholder' => '🎓', 'help' => 'Используется если логотип не загружен.'],
+                        ['key' => 'title',       'label' => 'Название',  'type' => 'translatable'],
+                        ['key' => 'description', 'label' => 'Описание',  'type' => 'translatable_textarea'],
+                        ['key' => 'url',         'label' => 'Ссылка на сайт', 'type' => 'url',
+                            'placeholder' => 'https://partner.kz', 'help' => 'Если задана — карточка станет кликабельной.'],
+                    ],
+                ],
+            ],
+        ],
+
+        'description_table' => [
+            'items' => [
+                ['key' => 'show_index', 'label' => 'Показывать №',    'type' => 'select',
+                    'options' => [['value' => '1', 'label' => 'Да'], ['value' => '0', 'label' => 'Нет']],
+                ],
+                ['key' => 'show_date',  'label' => 'Показывать дату', 'type' => 'select',
+                    'options' => [['value' => '1', 'label' => 'Да'], ['value' => '0', 'label' => 'Нет']],
+                ],
+                ['key' => 'striped',    'label' => 'Зебра',           'type' => 'select',
+                    'options' => [['value' => '1', 'label' => 'Да'], ['value' => '0', 'label' => 'Нет']],
+                ],
+                [
+                    'key' => 'rows', 'label' => 'Строки', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'description', 'label' => 'Описание',     'type' => 'translatable_textarea'],
+                        ['key' => 'date',        'label' => 'Дата',         'type' => 'text', 'placeholder' => 'YYYY-MM-DD'],
+                        ['key' => 'link_label',  'label' => 'Текст ссылки', 'type' => 'translatable'],
+                        ['key' => 'link_url',    'label' => 'Файл / ссылка (можно свой для ru/kk/en)', 'type' => 'translatable_file',
+                            'placeholder' => 'https://… или /storage/…'],
+                        ['key' => 'link_type',   'label' => 'Тип',          'type' => 'select',
+                            'options' => [
+                                ['value' => 'document', 'label' => 'Документ'],
+                                ['value' => 'external', 'label' => 'Внешняя ссылка'],
+                                ['value' => 'video',    'label' => 'Видео'],
+                                ['value' => 'image',    'label' => 'Изображение'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+
+        'document_group' => [
+            'items' => [
+                ['key' => 'group_by', 'label' => 'Группировать по', 'type' => 'select',
+                    'options' => [
+                        ['value' => 'category', 'label' => 'Категории'],
+                        ['value' => 'date',     'label' => 'Дате (по году)'],
+                        ['value' => 'none',     'label' => 'Без группировки'],
+                    ],
+                ],
+                ['key' => 'layout', 'label' => 'Вид', 'type' => 'select',
+                    'options' => [
+                        ['value' => 'tabs',      'label' => 'Вкладки'],
+                        ['value' => 'accordion', 'label' => 'Аккордеон'],
+                        ['value' => 'list',      'label' => 'Список'],
+                    ],
+                ],
+                [
+                    'key' => 'documents', 'label' => 'Документы', 'type' => 'array',
+                    'item_fields' => [
+                        ['key' => 'title',       'label' => 'Название',  'type' => 'translatable'],
+                        ['key' => 'description', 'label' => 'Описание',  'type' => 'translatable_textarea'],
+                        ['key' => 'category',    'label' => 'Категория', 'type' => 'translatable',
+                            'placeholder' => 'Используется при группировке по категории'],
+                        ['key' => 'file',        'label' => 'Файл',      'type' => 'file'],
+                        ['key' => 'size',        'label' => 'Размер',    'type' => 'text', 'placeholder' => '1.2 МБ'],
+                        ['key' => 'date',        'label' => 'Дата',      'type' => 'text', 'placeholder' => 'YYYY-MM-DD'],
+                    ],
+                ],
+            ],
+        ],
+
+        'single_image' => [
+            'items' => [
+                ['key' => 'image',   'label' => 'Изображение', 'type' => 'image'],
+                ['key' => 'caption', 'label' => 'Подпись',     'type' => 'translatable'],
+                ['key' => 'alt',     'label' => 'Alt-текст',   'type' => 'translatable'],
+                ['key' => 'width',   'label' => 'Ширина',      'type' => 'select',
+                    'options' => [
+                        ['value' => 'container', 'label' => 'По контейнеру'],
+                        ['value' => 'wide',      'label' => 'Широкая'],
+                        ['value' => 'full',      'label' => 'На всю ширину окна'],
+                    ],
+                ],
+                ['key' => 'aspect', 'label' => 'Пропорции', 'type' => 'select',
+                    'options' => [
+                        ['value' => 'auto',   'label' => 'Авто'],
+                        ['value' => 'square', 'label' => 'Квадрат'],
+                        ['value' => '4-3',    'label' => '4:3'],
+                        ['value' => '16-9',   'label' => '16:9'],
+                        ['value' => 'a4',     'label' => 'A4 (для сканов)'],
+                    ],
+                ],
+                ['key' => 'enable_zoom', 'label' => 'Zoom по клику', 'type' => 'select',
+                    'options' => [['value' => '1', 'label' => 'Да'], ['value' => '0', 'label' => 'Нет']],
+                ],
+                ['key' => 'background', 'label' => 'Фон', 'type' => 'select',
+                    'options' => [
+                        ['value' => 'none', 'label' => 'Нет'],
+                        ['value' => 'gray', 'label' => 'Серый'],
+                        ['value' => 'soft', 'label' => 'Мягкий'],
+                    ],
+                ],
             ],
         ],
     ];

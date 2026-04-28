@@ -5,6 +5,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.52.0] — 2026-04-28
+
+### Added
+- **Preview-URL resolver hook.** `AdminCore::previewResolver(string $regex, callable $fn)`
+  registers a function that maps a synthetic block `page_name` (e.g.
+  `procurement-{id}`, `program-{id}` — anything attached via polymorphic
+  `blockable`) to the public URL the live-preview iframe should load.
+  Without it the iframe always built `/{page_name}` and 404'd for
+  synthetic keys; consumer sites worked around it with route-redirects.
+  `AdminCore::resolvePreviewUrl(string $pageName)` returns the first
+  non-null match. `Form.vue` falls back to the default `/{page_name}`
+  when no resolver matches, so existing sites are unaffected.
+- **Three universal block types** registered out-of-the-box, with admin
+  schemas and visual editors via `BlockDataEditor`:
+  - `description_table` — «таблица описаний»: rows of «описание / дата
+    / переключаемая по локали ссылка-файл / тип ссылки», с № и зеброй.
+    Универсально под любые реестры документов.
+  - `document_group` — PDFs/DOCs grouped by category или year, layouts
+    tabs / accordion / list. Каждый файл — translatable title, file,
+    description, category.
+  - `single_image` — крупное изображение (для сканов A4 и фасадов) с
+    zoom по клику, выбором пропорций (auto/4:3/16:9/A4), ширины
+    (container/wide/full) и фона.
+
+### Changed
+- **`clubs-grid` schema added.** Previously `clubs-grid` was listed in
+  `BLOCK_TYPES` but had no admin schema → editors saw a raw JSON
+  textarea. Now ships per-card fields: logo (image-upload), icon
+  (text fallback), title, description, url. Same shape ETU was
+  carrying as a local override — moved into the package so etec /
+  other consumers get it automatically.
+
+### Migration
+- Sites that registered any of these schemas locally (e.g. ETU's
+  `EtuBlockCatalog::descriptionTableSchema()` / `documentGroupSchema()`
+  / `singleImageSchema()` / `clubsGridSchema()`) can drop those
+  overrides — the package's schemas are equivalent and pick up
+  through `parent::blockSchema()`.
+
 ## [0.51.5] — 2026-04-28
 
 ### Fixed

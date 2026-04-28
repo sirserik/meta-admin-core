@@ -83,9 +83,14 @@ const previewIframe = ref(null);
 const previewUrl = computed(() => {
     const page = form.page_name || props.item.page_name;
     if (!page || page === 'header' || page === 'footer' || page === 'menu') return '';
-    // home → '/', anything else → '/{slug}'. Add cache-buster on save.
-    const base = page === 'home' ? '/' : ('/' + page);
-    return base + '?_preview=' + (previewBuster.value || 0);
+    // 1. Server-side resolver (AdminCore::previewResolver()) — used for
+    //    synthetic page_names like `procurement-{id}` that map to a real
+    //    public slug-URL but whose name itself isn't routable.
+    // 2. Default: home → '/', anything else → '/{page_name}'.
+    const resolved = props.item.preview_url;
+    const base = resolved ? resolved : (page === 'home' ? '/' : ('/' + page));
+    const sep = base.includes('?') ? '&' : '?';
+    return base + sep + '_preview=' + (previewBuster.value || 0);
 });
 const previewBuster = ref(0);
 

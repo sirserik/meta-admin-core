@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Meta\AdminCore\AdminCore resource(string $name, array $config)
  * @method static \Meta\AdminCore\AdminCore menuItem(string $label, string $href, string $icon = 'fa-circle', string $menu = 'Другое', int $order = 100)
  * @method static \Meta\AdminCore\AdminCore dashboardStat(callable $provider)
+ * @method static \Meta\AdminCore\AdminCore previewResolver(string $regex, callable $resolver)
+ * @method static string|null resolvePreviewUrl(string $pageName)
  * @method static \Illuminate\Support\Collection getResources()
  * @method static array|null getResource(string $name)
  * @method static bool hasResource(string $name)
