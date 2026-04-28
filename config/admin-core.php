@@ -109,12 +109,13 @@ return [
         'vacancies' => env('FEATURE_VACANCIES',  true),
 
         // Optional extensions
-        'sdg'         => env('FEATURE_SDG',        false),
-        'green_deal'  => env('FEATURE_GREEN_DEAL', false),
-        'library'     => env('FEATURE_LIBRARY',    false),
-        'catalog'     => env('FEATURE_CATALOG',    false),
-        'projects'    => env('FEATURE_PROJECTS',   false),
-        'redirects'   => env('FEATURE_REDIRECTS',  true),
+        'sdg'           => env('FEATURE_SDG',          false),
+        'green_deal'    => env('FEATURE_GREEN_DEAL',   false),
+        'procurements'  => env('FEATURE_PROCUREMENTS', false),
+        'library'       => env('FEATURE_LIBRARY',      false),
+        'catalog'       => env('FEATURE_CATALOG',      false),
+        'projects'      => env('FEATURE_PROJECTS',     false),
+        'redirects'     => env('FEATURE_REDIRECTS',    true),
 
         // Inbox
         'leads'             => env('FEATURE_LEADS',             true),
