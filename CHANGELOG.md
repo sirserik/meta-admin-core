@@ -5,6 +5,39 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.53.0] — 2026-04-28
+
+### Added
+- **Polymorphic `page_blocks`.** Any Eloquent model can now own a
+  flexible stack of blocks via `blockable_type/blockable_id`, in
+  addition to the legacy `page_name`-keyed binding. Useful for
+  per-row content like procurements, programs, news — anything where
+  each row deserves its own block stack instead of a single named
+  page.
+  - Migration `2026_04_28_000001_add_blockable_to_page_blocks` adds
+    the two columns + a `(blockable_type, blockable_id, is_active,
+    sort_order)` index. Idempotent — guarded by `Schema::hasColumn`,
+    so consumers that already added these columns locally won't
+    conflict.
+  - `PageBlock::blockable()` morphTo, `scopeForBlockable($type, $id)`,
+    `getBlocksFor($owner, $publishedOnly)` static factory with cache
+    keyed by `blockable_<type>_<id>_<pub|all>` (matches the
+    `booted()` invalidation).
+  - New `Meta\AdminCore\Concerns\HasContentBlocks` trait for owner
+    models — gives `contentBlocks` MorphMany, `loadContentBlocks()`
+    helper, `contentBlocksPageName()` for synthetic page_name
+    derivation (e.g. `procurement-{id}` for the legacy block editor
+    URL).
+  - Docs: `docs/POLYMORPHIC-BLOCKS.md` walks through owner-side
+    usage, block creation, live-preview registration, and rendering.
+
+### Backwards compatibility
+
+Existing `page_name`-only blocks are unchanged. New polymorphic
+rows can also carry a `page_name` (the synthetic key) so the
+existing `<x-page-blocks>` machinery and `/admin/blocks?page=…`
+editor URL continue to work without changes.
+
 ## [0.52.0] — 2026-04-28
 
 ### Added

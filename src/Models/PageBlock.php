@@ -26,7 +26,8 @@ class PageBlock extends Model
     protected $table = 'page_blocks';
 
     protected $fillable = [
-        'page_name', 'block_key', 'block_type',
+        'page_name', 'blockable_type', 'blockable_id',
+        'block_key', 'block_type',
         'title', 'subtitle', 'content',
         'data', 'settings',
         'is_active', 'status', 'published_at',
@@ -47,6 +48,18 @@ class PageBlock extends Model
     {
         $bust = function (PageBlock $block) {
             Cache::forget('page_blocks_' . $block->page_name);
+
+            // Polymorphic cache key (matches getBlocksFor() shape).
+            if ($block->blockable_type && $block->blockable_id) {
+                $base = sprintf(
+                    'blockable_%s_%s',
+                    str_replace('\\', '_', $block->blockable_type),
+                    $block->blockable_id
+                );
+                Cache::forget($base . '_pub');
+                Cache::forget($base . '_all');
+            }
+
             Cache::flush();
 
             $viewsPath = storage_path('framework/views');
@@ -69,6 +82,53 @@ class PageBlock extends Model
     public function scopeForPage($query, string $pageName)
     {
         return $query->where('page_name', $pageName);
+    }
+
+    /* === POLYMORPHIC OWNER === */
+
+    /**
+     * Block can be polymorphically attached to any model — Procurement,
+     * Program, News, you name it. Backfills page_name still work for
+     * static pages (about, contact, etc.) — both binding modes coexist.
+     */
+    public function blockable()
+    {
+        return $this->morphTo();
+    }
+
+    public function scopeForBlockable($query, string $type, int|string $id)
+    {
+        return $query->where('blockable_type', $type)->where('blockable_id', $id);
+    }
+
+    /**
+     * Fetch the block collection for an owner model, ordered by sort_order
+     * and keyed by block_key. Cached per (owner, published-vs-all) — the
+     * cache key matches what booted() invalidates on save/delete.
+     */
+    public static function getBlocksFor(\Illuminate\Database\Eloquent\Model $owner, bool $publishedOnly = true)
+    {
+        $type = $owner->getMorphClass();
+        $id   = $owner->getKey();
+        $base = sprintf('blockable_%s_%s', str_replace('\\', '_', $type), $id);
+        $key  = $base . ($publishedOnly ? '_pub' : '_all');
+
+        $loader = function () use ($type, $id, $publishedOnly) {
+            $q = static::query()
+                ->forBlockable($type, $id)
+                ->with('translations')
+                ->orderBy('sort_order');
+
+            if ($publishedOnly) {
+                $q->published();
+            }
+
+            return $q->get()->keyBy('block_key');
+        };
+
+        return $publishedOnly
+            ? Cache::remember($key, 600, $loader)
+            : $loader();
     }
 
     public function isDraft(): bool     { return $this->status === 'draft'; }
