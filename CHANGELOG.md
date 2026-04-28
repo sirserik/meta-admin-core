@@ -5,6 +5,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.54.0] — 2026-04-28
+
+### Added
+- **`ProcurementsFeature`** — opt-in module that ships a procurements
+  / tenders directory out of the box. Toggleable from `/admin/features`
+  like other Feature modules (Green Deal, SDG).
+  - `Meta\AdminCore\Models\Procurement` — full model: HasSlug,
+    Translatable (title/summary/customer), `HasContentBlocks` for
+    polymorphic block stack per row, scopes
+    (published/byStatus/byType/byYear/search), display helpers
+    (statusLabel/typeLabel/statusColor, isDeadlineSoon).
+  - Migration `2026_04_28_000002_create_procurements_table` —
+    idempotent (skipped on consumers that already created the table
+    locally; ETU's pre-existing `2026_04_27_120100` migration
+    coexists fine).
+  - The feature self-registers `AdminCore::resource('procurements', …)`
+    with a generic Resource/{Index,Form}.vue (translatable ru/kk/en
+    tabs, status / procurement_type filters, all metadata fields),
+    plus `AdminCore::previewResolver('/^procurement-(\d+)$/', …)`
+    that maps synthetic page_names to the consumer's
+    `/procurements/{slug}` URL.
+  - Resource's `edit_url` jumps from the row to its block-builder
+    (`/admin/blocks?page=procurement-{id}`) so editors land in the
+    polymorphic block stack right after saving meta-fields.
+
+### Consumer responsibilities
+
+The package owns the model + admin form. Each consumer site adds:
+- routes — `/procurements` and `/procurements/{slug}`,
+- public Blade views (listing + detail with `<x-page-blocks>`),
+- frontend translations,
+- nav/menu entry pointing at `/procurements`,
+- optional `PageBlock::saving` observer to back-fill `blockable_*`
+  from the synthetic page_name written by the existing block-editor
+  (one preg_match + class_exists guard).
+
+ETU (consumer #2) is the reference implementation — see its
+`procurements/` views and the AppServiceProvider observer.
+
 ## [0.53.0] — 2026-04-28
 
 ### Added

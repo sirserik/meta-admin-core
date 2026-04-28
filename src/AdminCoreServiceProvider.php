@@ -20,6 +20,7 @@ class AdminCoreServiceProvider extends ServiceProvider
         return [
             \Meta\AdminCore\Features\GreenDealFeature::class,
             \Meta\AdminCore\Features\SdgFeature::class,
+            \Meta\AdminCore\Features\ProcurementsFeature::class,
         ];
     }
 
