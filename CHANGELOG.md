@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.56.0] — 2026-04-29
+
+### Added
+- **`auto_publish_at` resource option** — когда `true`, `ResourceController`
+  и при создании, и при редактировании ставит `published_at = now()` в
+  момент, когда `status` переключается в `'published'`, а `published_at`
+  пуст. Имена колонок фиксированы (`status`, `published_at`); если хотя
+  бы одной нет на таблице — опция тихо игнорируется.
+  ```php
+  AdminCore::resource('news', [
+      'model'           => News::class,
+      'auto_publish_at' => true,
+      // …
+  ]);
+  ```
+
+### Why
+Публичные scope-ы вида `News::published()` фильтруют по
+`status='published' AND published_at <= now()`. Если редактор отметил
+«Опубликовано», но забыл выставить дату — запись сохранялась, но на
+сайт не попадала, потому что `published_at IS NULL`. Раньше каждый
+сайт-потребитель городил свой `saving`-хук на модель — теперь общий.
+
 ## [0.55.0] — 2026-04-29
 
 ### Added

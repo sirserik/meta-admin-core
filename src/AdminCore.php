@@ -196,6 +196,14 @@ class AdminCore
         // подставит Auth::id() в эту колонку, когда форма её не передаёт.
         // Колонка должна существовать на таблице модели; иначе игнорируется.
         $config['author_field']  = $config['author_field']  ?? null;
+        // auto_publish_at — когда true, ResourceController при создании или
+        // редактировании ставит published_at = now() в момент, когда
+        // status переключился в 'published', а published_at пуст. Имена
+        // колонок фиксированы (`status`, `published_at`); если хоть одной
+        // нет на таблице — опция тихо игнорируется. Спасает от ситуации
+        // «отметил Опубликовано, забыл дату — публичные scope `published()`
+        // не подхватили запись».
+        $config['auto_publish_at'] = $config['auto_publish_at'] ?? false;
         $config['route_key']     = $config['route_key']     ?? null; // null = use model default
         $config['per_page']      = $config['per_page']      ?? 15;
         $config['order_by']      = $config['order_by']      ?? ['created_at' => 'desc'];

@@ -188,6 +188,7 @@ class ResourceController extends Controller
         $m = new $config['model']();
         $this->fill($m, $data, $request, $config);
         $this->applyCreationDefaults($m, $config);
+        $this->applyAutoPublishAt($m, $config);
         $m->save();
         $this->saveTranslations($m, $data, $config);
 
@@ -224,6 +225,27 @@ class ResourceController extends Controller
         }
     }
 
+    /**
+     * При status='published' и пустой published_at — ставим now().
+     * Срабатывает и при создании, и при обновлении (переключение
+     * draft→published без указания даты — рутинный сценарий).
+     * Имена колонок фиксированы (status, published_at) — расширим
+     * через ['status_field'=>…, 'date_field'=>…], если кому-то надо.
+     */
+    protected function applyAutoPublishAt(Model $m, array $config): void
+    {
+        if (empty($config['auto_publish_at'])) return;
+
+        $table = $m->getTable();
+        if (!Schema::hasColumn($table, 'status') || !Schema::hasColumn($table, 'published_at')) {
+            return;
+        }
+
+        if ($m->status === 'published' && empty($m->published_at)) {
+            $m->published_at = now();
+        }
+    }
+
     public function update(Request $request, string $id): RedirectResponse
     {
         $resource = $this->resolveResource($request);
@@ -232,6 +254,7 @@ class ResourceController extends Controller
         $data = $this->validated($request, $config, $m);
 
         $this->fill($m, $data, $request, $config, $m);
+        $this->applyAutoPublishAt($m, $config);
         $m->save();
         $this->saveTranslations($m, $data, $config);
 
