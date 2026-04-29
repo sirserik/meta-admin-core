@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -186,11 +187,41 @@ class ResourceController extends Controller
         /** @var Model $m */
         $m = new $config['model']();
         $this->fill($m, $data, $request, $config);
+        $this->applyCreationDefaults($m, $config);
         $m->save();
         $this->saveTranslations($m, $data, $config);
 
         return redirect($this->resourceIndexUrl($resource))
             ->with('success', $config['label'] . ' создан(а)');
+    }
+
+    /**
+     * Заполняет на новой модели те поля, которые админ-форма не передаёт:
+     *   - author_field → Auth::id() (если задано в конфиге ресурса и колонка
+     *     существует, а текущий пользователь авторизован);
+     *   - attributes[].default → подставляется, когда значение из формы пустое.
+     * Без этого ресурсы вроде news/pages с NOT NULL колонками падают на
+     * SQLSTATE 23000 при создании из админки.
+     */
+    protected function applyCreationDefaults(Model $m, array $config): void
+    {
+        $authorField = $config['author_field'] ?? null;
+        if ($authorField
+            && Schema::hasColumn($m->getTable(), $authorField)
+            && empty($m->{$authorField})
+            && Auth::check()
+        ) {
+            $m->{$authorField} = Auth::id();
+        }
+
+        foreach ($config['attributes'] as $a) {
+            if (!array_key_exists('default', $a)) continue;
+            $name = $a['name'];
+            $current = $m->{$name} ?? null;
+            if ($current === null || $current === '') {
+                $m->{$name} = $a['default'];
+            }
+        }
     }
 
     public function update(Request $request, string $id): RedirectResponse

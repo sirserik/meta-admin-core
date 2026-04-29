@@ -191,6 +191,11 @@ class AdminCore
         // (e.g. is_active=false → "скрыт с сайта" visual).
         $config['dim']           = $config['dim']           ?? null;
         $config['image_field']   = $config['image_field']   ?? null;
+        // author_field — имя колонки автора (author_id, user_id, created_by…).
+        // Если задано, ResourceController при создании автоматически
+        // подставит Auth::id() в эту колонку, когда форма её не передаёт.
+        // Колонка должна существовать на таблице модели; иначе игнорируется.
+        $config['author_field']  = $config['author_field']  ?? null;
         $config['route_key']     = $config['route_key']     ?? null; // null = use model default
         $config['per_page']      = $config['per_page']      ?? 15;
         $config['order_by']      = $config['order_by']      ?? ['created_at' => 'desc'];

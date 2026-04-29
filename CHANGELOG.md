@@ -5,6 +5,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.55.0] — 2026-04-29
+
+### Added
+- **`author_field` resource option** — имя колонки автора
+  (`author_id`, `user_id`, `created_by`…). При создании ресурса через
+  админку `ResourceController::store()` автоматически подставит
+  `Auth::id()` в эту колонку, если форма её не передаёт. Колонка должна
+  существовать на таблице модели; иначе игнорируется.
+  ```php
+  AdminCore::resource('news', [
+      'model'        => News::class,
+      'author_field' => 'author_id',
+      // …
+  ]);
+  ```
+- **`default` per-attribute option** — для любого `attributes[]`-поля
+  можно указать дефолтное значение. Применяется при создании ресурса,
+  если форма прислала пустую строку или не прислала ключ вовсе.
+  ```php
+  ['name' => 'status', 'type' => 'select',
+   'options' => $statusOptions, 'default' => 'draft'],
+  ```
+
+### Why
+Без этих опций ресурсы вроде `news`/`pages` с NOT NULL колонками
+(`status`, `author_id`) падали в админке на SQLSTATE 23000 при создании,
+если форма поля не передавала. Раньше каждый сайт-потребитель городил
+свой `creating`-хук на модель — теперь логика общая.
+
 ## [0.54.0] — 2026-04-28
 
 ### Added
