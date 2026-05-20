@@ -5,6 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-05-21
+
+### Fixed
+- **Sitemap (и другие public routes) теперь не конфликтуют с consumer'ом.**
+  Package routes из `routes/public.php` (`/media/*`, `/sitemap.xml`,
+  `/api/forms/*`, `/api/content/*`) загружаются в `booted()` колбэке после
+  consumer'а `routes/web.php`, и в Laravel последний registered route с
+  тем же URI выигрывает. Это значило: если у consumer'а уже есть
+  `/sitemap.xml` (как у ETU), его перекрывал package'овский, что давало
+  пустой XML.
+
+### Added
+- **`config('admin-core.routes')`** — opt-out для каждого публичного роута:
+  `media`, `sitemap`, `forms`, `content_api`. Все default = `true`,
+  переопределяются через env (`ADMIN_CORE_ROUTE_MEDIA=false` и т.д.).
+- **Auto-skip по URI** — если на момент регистрации package-роутов уже
+  существует consumer-роут с тем же URI и методом, пакет тихо пропускает
+  свой. Safety net: даже если забыли выключить через config, conflict
+  не возникает.
+
+### Migration
+Никаких действий не требуется. Существующие consumer'ы продолжают работать.
+Если у тебя был ETU-style собственный `/sitemap.xml` — он теперь побеждает
+автоматически.
+
 ## [1.1.0] — 2026-05-21
 
 ### Added

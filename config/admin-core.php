@@ -36,6 +36,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public routes (opt-out)
+    |--------------------------------------------------------------------------
+    |
+    | Each entry toggles a public-facing route shipped with the package.
+    | Defaults to `true` so the package stays additive out of the box.
+    |
+    | The package also auto-skips a route if the consumer already registered
+    | one at the same URI — so most consumer sites don't need to touch this
+    | section at all. Set explicitly to `false` if you want to be loud about
+    | the decision (e.g. consumer defines its own /sitemap.xml).
+    |
+    */
+    'routes' => [
+        'media'       => env('ADMIN_CORE_ROUTE_MEDIA',       true),
+        'sitemap'     => env('ADMIN_CORE_ROUTE_SITEMAP',     true),
+        'forms'       => env('ADMIN_CORE_ROUTE_FORMS',       true),
+        'content_api' => env('ADMIN_CORE_ROUTE_CONTENT_API', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Image upload endpoint used by Tiptap (upload-handler).
     | Route must exist in the consumer app and accept multipart/form-data 'file'.
     |--------------------------------------------------------------------------
