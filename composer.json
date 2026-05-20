@@ -2,7 +2,6 @@
     "name": "meta/admin-core",
     "description": "Headless admin panel core for META University sites (Inertia + Vue 3 + Tiptap). Provides base Inertia controllers, Resource API, block library, and reusable Vue components.",
     "type": "library",
-    "version": "1.3.0",
     "license": "proprietary",
     "authors": [
         { "name": "META University", "email": "dev@meta.edu.kz" }
