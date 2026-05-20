@@ -29,6 +29,11 @@ class AdminCoreServiceProvider extends ServiceProvider
         $this->app->singleton(AdminCore::class, fn () => new AdminCore());
         $this->app->alias(AdminCore::class, 'admin-core');
 
+        // BlockRegistry — singleton so consumer's AppServiceProvider can
+        // call AdminCore::useBlocks() and AdminCore::registerBlock() and
+        // every render path sees the same registry.
+        $this->app->singleton(\Meta\AdminCore\Blocks\BlockRegistry::class);
+
         $this->mergeConfigFrom(__DIR__ . '/../config/admin-core.php', 'admin-core');
         $this->mergeConfigFrom(__DIR__ . '/../config/theme.php', 'theme');
 
@@ -183,6 +188,14 @@ class AdminCoreServiceProvider extends ServiceProvider
 
         // Blade root view namespace
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'admin-core');
+
+        // Block templates: add core's resources/views to the global view
+        // finder as a *low-priority* path. Consumer apps can override any
+        // block (e.g. resources/views/blocks/v2/hero.blade.php) and Laravel
+        // will pick the local copy first — no `vendor:publish` needed.
+        $this->callAfterResolving('view', function ($view) {
+            $view->addLocation(__DIR__ . '/../resources/views');
+        });
 
         // Anonymous Blade components under the `admin-core::` namespace.
         // Consumer templates use e.g. <x-admin-core::documents :items="…"/>.

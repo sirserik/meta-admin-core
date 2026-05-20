@@ -5,6 +5,54 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-05-20
+
+### Added
+- **Block library в core**: 18 встроенных блоков перенесены из consumer-сайтов
+  (ETU `app/Blocks/Definitions/*`) в пакет под `Meta\AdminCore\Blocks\Definitions\*`.
+  Hero, Content, Cta, Features, Stats, Gallery, Links, Heading, Faq,
+  AdmissionStep, Programs, Team, Timeline, PartnersSection, Video, SingleImage,
+  DocumentGroup, DescriptionTable. Каждый — `BlockDefinition` со schema-первой
+  моделью (handle/label/category/icon/schema/render).
+- **`AdminCore::useBlocks($handles)`** — opt-in регистрация встроенных блоков
+  из AppServiceProvider консумера. `useBlocks('*')` подключает все. Передача
+  неизвестного handle бросает `InvalidArgumentException` на boot (typo
+  surface).
+- **`AdminCore::registerBlock($block)`** — регистрация кастомного site-specific
+  блока (extends `BlockDefinition`).
+- **`Meta\AdminCore\Blocks\BlockRegistry`** — singleton, реестр handle→Definition,
+  методы `register()`, `get()`, `byCategory()`, `render()`, `validate()`.
+- **View-path авто-загрузка**: `resources/views/blocks/v2/{handle}.blade.php`
+  из пакета добавляется как low-priority view location. Сайт может
+  переопределить любой блок, положив свой шаблон в `resources/views/blocks/v2/`
+  — Laravel view finder подхватит локальную копию первой. `vendor:publish`
+  не нужен.
+
+### Removed (BREAKING)
+- Consumer-сайты больше не должны держать локальный `app/Blocks/Definitions/*`
+  для встроенных блоков. Удалите дубликаты и подключите `AdminCore::useBlocks('*')`
+  в `AppServiceProvider::boot()`. Кастомные блоки сайта остаются в `app/Blocks/`
+  и регистрируются через `AdminCore::registerBlock()`.
+- `\App\Blocks\BlockRegistry` → `\Meta\AdminCore\Blocks\BlockRegistry`. Все
+  ссылки в Blade-компонентах (`page-blocks.blade.php`, `block-renderer.blade.php`)
+  должны быть обновлены.
+
+### Migration guide
+
+В consumer-сайте:
+```diff
+- App\Providers\BlockServiceProvider::class,  // bootstrap/providers.php
+```
+```diff
+- $registry = $this->app->make(BlockRegistry::class);
+- $registry->register(new HeroBlock); … (×18)   // BlockServiceProvider::boot
++ AdminCore::useBlocks('*');                    // AppServiceProvider::boot
+```
+```diff
+- rm -rf app/Blocks/
+- rm app/Providers/BlockServiceProvider.php
+```
+
 ## [0.56.0] — 2026-04-29
 
 ### Added

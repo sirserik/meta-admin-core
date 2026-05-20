@@ -407,6 +407,92 @@ class AdminCore
         return $this;
     }
 
+    // -------------------------------------------------------------------
+    // Block library — opt-in registration of ship-with-core block types.
+    //
+    // Consumer apps pick the ones they want from their AppServiceProvider:
+    //
+    //   AdminCore::useBlocks([
+    //       'hero', 'content', 'cta', 'features', 'stats', 'gallery',
+    //       'links', 'heading', 'faq', 'timeline', 'team',
+    //   ]);
+    //
+    // Each handle maps to a class in Meta\AdminCore\Blocks\Definitions\.
+    // Unknown handles throw — typos surface at boot rather than at render.
+    //
+    // Sites can also register their own custom blocks alongside core ones:
+    //
+    //   AdminCore::registerBlock(new App\Blocks\PricingBlock);
+    // -------------------------------------------------------------------
+
+    /**
+     * Map of handle → BlockDefinition class. Keys mirror the handle()
+     * each block returns (snake_case for compounds like admission_step,
+     * matches what ends up in the database `block_type` column).
+     */
+    protected const BUILTIN_BLOCKS = [
+        'hero'              => \Meta\AdminCore\Blocks\Definitions\HeroBlock::class,
+        'content'           => \Meta\AdminCore\Blocks\Definitions\ContentBlock::class,
+        'cta'               => \Meta\AdminCore\Blocks\Definitions\CtaBlock::class,
+        'features'          => \Meta\AdminCore\Blocks\Definitions\FeaturesBlock::class,
+        'stats'             => \Meta\AdminCore\Blocks\Definitions\StatsBlock::class,
+        'gallery'           => \Meta\AdminCore\Blocks\Definitions\GalleryBlock::class,
+        'links'             => \Meta\AdminCore\Blocks\Definitions\LinksBlock::class,
+        'heading'           => \Meta\AdminCore\Blocks\Definitions\HeadingBlock::class,
+        'faq'               => \Meta\AdminCore\Blocks\Definitions\FaqBlock::class,
+        'admission_step'    => \Meta\AdminCore\Blocks\Definitions\AdmissionStepBlock::class,
+        'programs'          => \Meta\AdminCore\Blocks\Definitions\ProgramsBlock::class,
+        'team'              => \Meta\AdminCore\Blocks\Definitions\TeamBlock::class,
+        'timeline'          => \Meta\AdminCore\Blocks\Definitions\TimelineBlock::class,
+        'partners-section'  => \Meta\AdminCore\Blocks\Definitions\PartnersSectionBlock::class,
+        'video'             => \Meta\AdminCore\Blocks\Definitions\VideoBlock::class,
+        'single_image'      => \Meta\AdminCore\Blocks\Definitions\SingleImageBlock::class,
+        'document_group'    => \Meta\AdminCore\Blocks\Definitions\DocumentGroupBlock::class,
+        'description_table' => \Meta\AdminCore\Blocks\Definitions\DescriptionTableBlock::class,
+    ];
+
+    /**
+     * Register the listed built-in block handles into the shared
+     * BlockRegistry. Order is preserved so consumers control palette
+     * sorting. Pass `'*'` (or no args) to enable every built-in.
+     */
+    public function useBlocks(array|string $handles = '*'): self
+    {
+        $registry = app(\Meta\AdminCore\Blocks\BlockRegistry::class);
+
+        if ($handles === '*' || $handles === ['*']) {
+            $handles = array_keys(self::BUILTIN_BLOCKS);
+        }
+
+        foreach ((array) $handles as $handle) {
+            if (!isset(self::BUILTIN_BLOCKS[$handle])) {
+                throw new \InvalidArgumentException(
+                    "AdminCore::useBlocks(): unknown built-in block '{$handle}'. "
+                    . 'Known: ' . implode(', ', array_keys(self::BUILTIN_BLOCKS))
+                );
+            }
+            $registry->register(new (self::BUILTIN_BLOCKS[$handle]));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Register a custom (site-specific) block. Typically a class in
+     * `App\Blocks\` extending `Meta\AdminCore\Blocks\BlockDefinition`.
+     */
+    public function registerBlock(\Meta\AdminCore\Blocks\BlockDefinition $block): self
+    {
+        app(\Meta\AdminCore\Blocks\BlockRegistry::class)->register($block);
+        return $this;
+    }
+
+    /** List of built-in handles available for `useBlocks()`. */
+    public static function builtInBlocks(): array
+    {
+        return array_keys(self::BUILTIN_BLOCKS);
+    }
+
     public function getResources(): Collection
     {
         return collect($this->resources);
