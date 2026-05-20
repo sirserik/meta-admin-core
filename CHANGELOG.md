@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-05-21
+
+### Security
+- **Dropped `svg` from `/admin/upload/image` allowed mimes.** Inline SVG
+  can carry `<script>` blocks executing under admin-session origin.
+  The endpoint is also reachable from the public rich-text editor, so
+  any logged-in editor surfaced the risk. Sites that genuinely need
+  SVG uploads should override `UploadController::uploadImage` with
+  their own controller and sanitize first.
+
 ## [1.3.0] — 2026-05-21
 
 ### Fixed
