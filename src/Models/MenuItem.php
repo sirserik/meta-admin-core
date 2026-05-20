@@ -15,6 +15,16 @@ use Meta\AdminCore\Concerns\Translatable;
  */
 class MenuItem extends Model
 {
+    /**
+     * Stable morph alias — see PageBlock for rationale (v1.3).
+     */
+    public function getMorphClass(): string
+    {
+        $map = \Illuminate\Database\Eloquent\Relations\Relation::morphMap();
+        $found = array_search(static::class, $map, true);
+        return $found !== false ? $found : 'menu_item';
+    }
+
     use Translatable;
 
     protected $table = 'menu_items';

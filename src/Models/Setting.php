@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\Cache;
  */
 class Setting extends Model
 {
+    /**
+     * Stable morph alias — see PageBlock for rationale (v1.3).
+     */
+    public function getMorphClass(): string
+    {
+        $map = \Illuminate\Database\Eloquent\Relations\Relation::morphMap();
+        $found = array_search(static::class, $map, true);
+        return $found !== false ? $found : 'setting';
+    }
+
     protected $table = 'settings';
 
     protected $fillable = ['key', 'group', 'value', 'type', 'description'];

@@ -47,6 +47,25 @@ class AdminCoreServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Stable morph alias defaults — keep `translations.translatable_type`
+        // (and any other morph column) free of FQCN drift even when the
+        // consumer ships its own classes for the same row (e.g. App\Models\
+        // PageBlock alongside Meta\AdminCore\Models\PageBlock).
+        //
+        // Laravel's morphMap() merges with whatever already exists, so
+        // consumer apps that register their own aliases first (in their
+        // AppServiceProvider::register()) win because admin-core boots
+        // after them; consumers that register *later* (in boot()) will
+        // overwrite these defaults by virtue of array_merge order.
+        // Either way the consumer is in control — these are just safe
+        // fallbacks so out-of-the-box translations are alias-typed.
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'page_block' => \Meta\AdminCore\Models\PageBlock::class,
+            'menu_item'  => \Meta\AdminCore\Models\MenuItem::class,
+            'setting'    => \Meta\AdminCore\Models\Setting::class,
+            'lead'       => \Meta\AdminCore\Models\Lead::class,
+        ]);
+
         // Admin recovery: rate limiter + middleware alias + routes. Limiter
         // and alias registered unconditionally so the `throttle:admin-recovery`
         // middleware reference in routes/recovery.php always resolves —
@@ -76,6 +95,7 @@ class AdminCoreServiceProvider extends ServiceProvider
                 \Meta\AdminCore\Console\Commands\ImportContentCommand::class,
                 \Meta\AdminCore\Console\Commands\MigrateToDocumentListCommand::class,
                 \Meta\AdminCore\Console\Commands\MakeBlockCommand::class,
+                \Meta\AdminCore\Console\Commands\MigrateMorphTypesCommand::class,
             ]);
         }
 

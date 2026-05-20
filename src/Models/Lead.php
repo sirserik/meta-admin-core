@@ -15,6 +15,16 @@ use Meta\AdminCore\Events\LeadCreated;
  */
 class Lead extends Model
 {
+    /**
+     * Stable morph alias — see PageBlock for rationale (v1.3).
+     */
+    public function getMorphClass(): string
+    {
+        $map = \Illuminate\Database\Eloquent\Relations\Relation::morphMap();
+        $found = array_search(static::class, $map, true);
+        return $found !== false ? $found : 'lead';
+    }
+
     protected $table = 'leads';
 
     protected $fillable = [

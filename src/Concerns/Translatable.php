@@ -73,8 +73,10 @@ trait Translatable
         foreach ($data as $field => $value) {
             if ($allowed && !in_array($field, $allowed, true)) continue;
 
+            // morph alias (via getMorphClass()) so writes consolidate with
+            // consumer's own model writing into the same morph slot.
             Translation::updateOrCreate([
-                'translatable_type' => get_class($this),
+                'translatable_type' => $this->getMorphClass(),
                 'translatable_id'   => $this->id,
                 'locale'            => $locale,
                 'field'             => $field,

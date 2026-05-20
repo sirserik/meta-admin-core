@@ -25,6 +25,29 @@ class PageBlock extends Model
 
     protected $table = 'page_blocks';
 
+    /**
+     * Stable morph alias — keeps the polymorphic `translations.translatable_type`
+     * column free of FQCN drift even when the consumer ships its own
+     * `App\Models\PageBlock` that also writes translations against the
+     * same table.
+     *
+     * Both classes return `'page_block'`, so admin-side writes and
+     * public-side reads land on the same rows regardless of which class
+     * the instance originated from.
+     *
+     * If you need a different alias on your site, define one with
+     *
+     *   Relation::morphMap(['my_block' => YourPageBlock::class]);
+     *
+     * in your AppServiceProvider — that takes precedence over this.
+     */
+    public function getMorphClass(): string
+    {
+        $map = \Illuminate\Database\Eloquent\Relations\Relation::morphMap();
+        $found = array_search(static::class, $map, true);
+        return $found !== false ? $found : 'page_block';
+    }
+
     protected $fillable = [
         'page_name', 'blockable_type', 'blockable_id',
         'block_key', 'block_type',

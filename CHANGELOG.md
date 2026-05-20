@@ -5,6 +5,53 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-05-21
+
+### Fixed
+- **Morph-type drift** между admin-core моделями и consumer-моделями
+  закрыт окончательно. Это проявлялось, когда сайт держал свою
+  `App\Models\PageBlock` рядом с пакетной `Meta\AdminCore\Models\PageBlock`:
+  каждая писала в `translations.translatable_type` свой FQCN, и public-
+  side читал старые значения, не видя свежие admin-side изменения
+  (kk/en title после редактирования).
+
+### Added
+- **`getMorphClass()` override** в моделях PageBlock, MenuItem, Setting, Lead.
+  Возвращает стабильный alias (`'page_block'`, `'menu_item'`, `'setting'`,
+  `'lead'`) — consumer-модели на тот же ряд DB получают тот же alias
+  и translations table консолидируется.
+- **AdminCoreServiceProvider регистрирует default morphMap** на эти
+  aliases. Consumer override через свой `Relation::morphMap([...])` в
+  AppServiceProvider — выигрывает (Laravel array_merge порядок).
+- **`Concerns/Translatable::saveTranslations()`** теперь использует
+  `$this->getMorphClass()` вместо `get_class($this)` — записи идут с
+  alias, не FQCN.
+- **`php artisan core:migrate-morph-types`** — миграция существующих
+  morph-rows с FQCN на aliases. Покрывает translations, revisions,
+  activity_logs, media. Dedup при unique-constraint collision
+  (предпочитает alias-row, удаляет FQCN-дубль). `--apply` для
+  фактического update, без флага — dry-run.
+
+### Migration guide
+Для существующих сайтов:
+```bash
+php artisan core:migrate-morph-types         # dry-run — посмотреть что будет
+php artisan core:migrate-morph-types --apply # выполнить
+```
+В consumer AppServiceProvider можно оставить custom morphMap если хочется
+переопределить admin-core defaults — он выиграет:
+```php
+Relation::morphMap([
+    'page_block' => \App\Models\PageBlock::class, // consumer wins
+]);
+```
+
+### Verified in regression (etu-new)
+End-to-end: admin PUT блока через Inertia → переводы RU/KK/EN записываются
+с alias `'page_block'` → public-side `App\Models\PageBlock::translate()`
+читает их корректно во всех трёх локалях. До патча — public видел только
+RU из scalar column'а, kk/en терялись.
+
 ## [1.2.0] — 2026-05-21
 
 ### Fixed
