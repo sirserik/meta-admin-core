@@ -99,6 +99,77 @@ abstract class BlockDefinition
         return [];
     }
 
+    /**
+     * Варианты вёрстки одного и того же блока. Аналог Gutenberg block patterns.
+     *
+     * Каждый вариант — пара `key => label`. Админка показывает radio/select
+     * в форме редактирования, value сохраняется в `data['variant']`. Render
+     * автоматически ищет blade `blocks.v2.{handle}.{variant}`, фоллбек на
+     * базовый `blocks.v2.{handle}` если файла нет.
+     *
+     * Пустой массив (по умолчанию) = у блока ровно одна вёрстка.
+     *
+     * Пример:
+     *   public function variants(): array
+     *   {
+     *       return [
+     *           'centered'  => 'По центру, светлый',
+     *           'split'     => 'Сплит с картинкой справа',
+     *           'image-bg'  => 'Полноэкранная картинка',
+     *       ];
+     *   }
+     *
+     * @return array<string, string>
+     */
+    public function variants(): array
+    {
+        return [];
+    }
+
+    /**
+     * Рендерит шаблон блока с учётом варианта.
+     *
+     * Поиск:
+     *  1) `blocks.v2.{handle}.{variant}` — variant-specific
+     *  2) `blocks.v2.{handle}`           — default fallback
+     *
+     * Сайт может перебить любую ступень, положив свой view в
+     * `resources/views/blocks/v2/{handle}/{variant}.blade.php` — Laravel
+     * view finder возьмёт локальный первым (consumer overrides package).
+     *
+     * Используется в render() реализациях:
+     *   public function render(array $data, string $locale): string
+     *   {
+     *       return $this->renderVariant($data, $locale);
+     *   }
+     */
+    protected function renderVariant(array $data, string $locale, array $extra = []): string
+    {
+        $handle  = $this->handle();
+        $variant = $data['variant'] ?? null;
+
+        $view = \Illuminate\Support\Facades\View::class;
+        $candidates = [];
+        if (is_string($variant) && $variant !== '' && array_key_exists($variant, $this->variants())) {
+            $candidates[] = "blocks.v2.{$handle}.{$variant}";
+        }
+        $candidates[] = "blocks.v2.{$handle}";
+
+        $payload = array_merge(['data' => $data, 'locale' => $locale, 'block' => $this], $extra);
+
+        foreach ($candidates as $candidate) {
+            if ($view::exists($candidate)) {
+                return $view::make($candidate, $payload)->render();
+            }
+        }
+
+        \Illuminate\Support\Facades\Log::warning(
+            "BlockDefinition::renderVariant: no view found for block '{$handle}'",
+            ['tried' => $candidates]
+        );
+        return '';
+    }
+
     /** Помощник: достать локализованное значение из {ru, kk, en} массива или вернуть как есть. */
     protected function localized(mixed $value, string $locale): ?string
     {

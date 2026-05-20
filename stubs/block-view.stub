@@ -1,0 +1,22 @@
+{{-- {{ class }} — рендер блока на публичной странице.
+     Получает переменные из {{ class }}::render() через $this->renderVariant():
+     - $data    — нормализованный массив data из БД
+     - $locale  — текущая локаль (ru/kk/en)
+     - $block   — инстанс {{ class }} (на случай вызова методов схемы)
+     - + всё что передано в $extra (по умолчанию: title, content)
+--}}
+<section class="py-16" style="background: var(--theme-surface);">
+    <div class="max-w-3xl mx-auto px-4">
+        @if (!empty($title))
+            <h2 class="text-3xl font-bold mb-6" style="color: var(--theme-ink);">
+                {{ $title }}
+            </h2>
+        @endif
+
+        @if (!empty($content))
+            <div class="prose max-w-none" style="color: var(--theme-ink);">
+                {!! $content !!}
+            </div>
+        @endif
+    </div>
+</section>

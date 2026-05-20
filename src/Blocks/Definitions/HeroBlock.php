@@ -3,10 +3,18 @@
 namespace Meta\AdminCore\Blocks\Definitions;
 
 use Meta\AdminCore\Blocks\BlockDefinition;
-use Illuminate\Support\Facades\View;
 
 class HeroBlock extends BlockDefinition
 {
+    public function variants(): array
+    {
+        return [
+            'default'  => 'Базовый (центр, фон-градиент)',
+            'centered' => 'По центру, светлый',
+            'split'    => 'Сплит с картинкой справа',
+        ];
+    }
+
     public function handle(): string
     {
         return 'hero';
@@ -30,6 +38,13 @@ class HeroBlock extends BlockDefinition
     public function schema(): array
     {
         return [
+            'variant' => [
+                'type' => 'select',
+                'label' => 'Вариант вёрстки',
+                'default' => 'default',
+                'options' => $this->variants(),
+                'help' => 'Подбирает один из готовых шаблонов рендера для этого блока.',
+            ],
             'badge' => [
                 'type' => 'text',
                 'label' => 'Бейдж над заголовком',
@@ -98,22 +113,25 @@ class HeroBlock extends BlockDefinition
 
     public function render(array $data, string $locale): string
     {
-        return View::make('blocks.v2.hero', [
-            'badge' => $this->localized($data['badge'] ?? null, $locale),
-            'title' => $this->localized($data['title'] ?? null, $locale),
-            'subtitle' => $this->localized($data['subtitle'] ?? null, $locale),
-            'background' => $data['background'] ?? 'gradient',
+        // Pre-flatten translatable values so variant templates don't repeat
+        // the ->localized() dance; pass through renderVariant which picks
+        // the right blade based on data['variant'].
+        return $this->renderVariant($data, $locale, [
+            'badge'           => $this->localized($data['badge'] ?? null, $locale),
+            'title'           => $this->localized($data['title'] ?? null, $locale),
+            'subtitle'        => $this->localized($data['subtitle'] ?? null, $locale),
+            'background'      => $data['background'] ?? 'gradient',
             'backgroundImage' => $data['background_image'] ?? null,
             'buttons' => collect($data['buttons'] ?? [])->map(fn ($b) => [
-                'text' => $this->localized($b['text'] ?? null, $locale),
-                'url' => $this->localized($b['url'] ?? null, $locale) ?: '#',
+                'text'  => $this->localized($b['text'] ?? null, $locale),
+                'url'   => $this->localized($b['url'] ?? null, $locale) ?: '#',
                 'style' => $b['style'] ?? 'primary',
             ])->all(),
             'stats' => collect($data['stats'] ?? [])->map(fn ($s) => [
                 'number' => $s['number'] ?? '',
-                'label' => $this->localized($s['label'] ?? null, $locale),
+                'label'  => $this->localized($s['label'] ?? null, $locale),
             ])->all(),
             'slides' => $data['slides'] ?? [],
-        ])->render();
+        ]);
     }
 }

@@ -75,6 +75,7 @@ class AdminCoreServiceProvider extends ServiceProvider
                 \Meta\AdminCore\Console\Commands\ExportContentCommand::class,
                 \Meta\AdminCore\Console\Commands\ImportContentCommand::class,
                 \Meta\AdminCore\Console\Commands\MigrateToDocumentListCommand::class,
+                \Meta\AdminCore\Console\Commands\MakeBlockCommand::class,
             ]);
         }
 

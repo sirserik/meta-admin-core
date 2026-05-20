@@ -5,6 +5,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-05-21
+
+### Added
+- **Block variants** — `BlockDefinition::variants(): array` декларирует
+  альтернативные вёрстки одного и того же блока (аналог Gutenberg block
+  patterns). Админка показывает выбор, value лежит в `data['variant']`,
+  рендер автоматически диспатчит на `blocks.v2.{handle}.{variant}.blade.php`
+  с fallback на базовый `blocks.v2.{handle}.blade.php`.
+- **`BlockDefinition::renderVariant($data, $locale, $extra)`** — helper для
+  реализаций `render()`, который находит правильный view и передаёт
+  payload. Заменяет ручной `View::make('blocks.v2.foo', [...])`.
+- **Hero block — 3 variants**: `default`, `centered`, `split`. Поставляются
+  как `resources/views/blocks/v2/hero/{centered,split}.blade.php`.
+- **Stats block — 2 variants**: `default` (сетка с цветным фоном),
+  `inline` (горизонтальная строка без фона).
+- **`php artisan core:make-block {Name}`** — скаффолдинг кастомного блока:
+  создаёт `app/Blocks/{Name}Block.php` (extends `BlockDefinition`) и
+  `resources/views/blocks/v2/{handle}.blade.php` из stubs, печатает
+  готовую строку регистрации `AdminCore::registerBlock(new {Name}Block)`.
+  Поддерживает `--handle=`, `--label=`, `--force`.
+- **stubs/block.stub + block-view.stub** — шаблоны для команды выше,
+  включают комментарий «как раскомментировать variants()».
+
+### Notes
+- Старые `View::make('blocks.v2.hero', [...])` остаются рабочими — variant
+  system additive, не ломающее изменение. Можно мигрировать на
+  `renderVariant()` блок за блоком.
+
 ## [1.0.0] — 2026-05-20
 
 ### Added

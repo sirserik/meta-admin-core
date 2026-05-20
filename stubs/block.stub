@@ -1,0 +1,76 @@
+<?php
+
+namespace {{ namespace }};
+
+use Meta\AdminCore\Blocks\BlockDefinition;
+
+/**
+ * {{ class }} — кастомный блок контента.
+ *
+ * Регистрация в AppServiceProvider::boot():
+ *
+ *   use Meta\AdminCore\Facades\AdminCore;
+ *
+ *   AdminCore::registerBlock(new \{{ namespace }}\{{ class }});
+ *
+ * Шаблон рендера: resources/views/blocks/v2/{{ handle }}.blade.php
+ */
+class {{ class }} extends BlockDefinition
+{
+    public function handle(): string
+    {
+        return '{{ handle }}';
+    }
+
+    public function label(): string
+    {
+        return '{{ label }}';
+    }
+
+    public function category(): string
+    {
+        return 'content'; // layout | content | media | widget | cta
+    }
+
+    public function icon(): string
+    {
+        return 'cube'; // FontAwesome handle без 'fa-'
+    }
+
+    public function schema(): array
+    {
+        return [
+            'title' => [
+                'type' => 'text',
+                'label' => 'Заголовок',
+                'translatable' => true,
+            ],
+            'content' => [
+                'type' => 'richtext',
+                'label' => 'Содержимое',
+                'translatable' => true,
+            ],
+            // 'variant' будет добавлен автоматически если variants() непустой.
+        ];
+    }
+
+    /**
+     * Если у блока несколько вёрсток — раскомментируй и опиши.
+     * Render автоматически выберет нужный blade по data['variant'].
+     */
+    // public function variants(): array
+    // {
+    //     return [
+    //         'default' => 'Базовый',
+    //         'wide'    => 'Широкий',
+    //     ];
+    // }
+
+    public function render(array $data, string $locale): string
+    {
+        return $this->renderVariant($data, $locale, [
+            'title'   => $this->localized($data['title'] ?? null, $locale),
+            'content' => $this->localized($data['content'] ?? null, $locale),
+        ]);
+    }
+}

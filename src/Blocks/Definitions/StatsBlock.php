@@ -3,10 +3,17 @@
 namespace Meta\AdminCore\Blocks\Definitions;
 
 use Meta\AdminCore\Blocks\BlockDefinition;
-use Illuminate\Support\Facades\View;
 
 class StatsBlock extends BlockDefinition
 {
+    public function variants(): array
+    {
+        return [
+            'default' => 'Базовый (сетка с цветным фоном)',
+            'inline'  => 'Инлайн (одна строка, без фона)',
+        ];
+    }
+
     public function handle(): string
     {
         return 'stats';
@@ -30,6 +37,12 @@ class StatsBlock extends BlockDefinition
     public function schema(): array
     {
         return [
+            'variant' => [
+                'type' => 'select',
+                'label' => 'Вариант вёрстки',
+                'default' => 'default',
+                'options' => $this->variants(),
+            ],
             'title' => ['type' => 'text', 'label' => 'Заголовок', 'translatable' => true],
             'subtitle' => ['type' => 'text', 'label' => 'Подзаголовок', 'translatable' => true],
             'background' => [
@@ -58,16 +71,16 @@ class StatsBlock extends BlockDefinition
 
     public function render(array $data, string $locale): string
     {
-        return View::make('blocks.v2.stats', [
-            'title' => $this->localized($data['title'] ?? ($data['_title'] ?? null), $locale),
-            'subtitle' => $this->localized($data['subtitle'] ?? ($data['_subtitle'] ?? null), $locale),
+        return $this->renderVariant($data, $locale, [
+            'title'      => $this->localized($data['title']    ?? ($data['_title']    ?? null), $locale),
+            'subtitle'   => $this->localized($data['subtitle'] ?? ($data['_subtitle'] ?? null), $locale),
             'background' => $data['background'] ?? ($data['_settings']['background'] ?? 'red'),
-            'columns' => (int) ($data['columns'] ?? 4),
+            'columns'    => (int) ($data['columns'] ?? 4),
             'stats' => collect($data['stats'] ?? [])->map(fn ($s) => [
                 'value' => $s['value'] ?? $s['number'] ?? '',
                 'label' => $this->localized($s['label'] ?? null, $locale),
-                'icon' => $s['icon'] ?? null,
+                'icon'  => $s['icon'] ?? null,
             ])->filter(fn ($s) => ! empty($s['value']))->all(),
-        ])->render();
+        ]);
     }
 }
