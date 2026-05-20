@@ -29,7 +29,11 @@ class UploadController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:10240',
+            // SVG intentionally dropped — inline SVG can carry <script>
+            // and we'd serve it from the same origin under user sessions.
+            // Sites that genuinely need SVG uploads should override this
+            // endpoint with their own controller and sanitize first.
+            'file' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
 
         $path = $this->imageService->uploadOriginal($request->file('file'), 'uploads/editor');
