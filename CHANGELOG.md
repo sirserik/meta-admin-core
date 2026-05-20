@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.2] — 2026-05-21
+
+### Fixed
+- **`/storage/storage/...` and `/media/storage/...` paths now resolve.**
+  Some upload handlers (TipTap admin editor seen in ETU production) sometimes
+  store an URL like `/storage/storage/news/X.jpg` — admin-core's media
+  serve was redirecting that verbatim to `/media/storage/news/X.jpg`
+  which then 404'd. Now `storage/` prefix is stripped (any number of
+  repeats) before the file lookup, so old broken URLs serve the file
+  anyway and the visitor sees the picture.
+
 ## [1.3.1] — 2026-05-21
 
 ### Security

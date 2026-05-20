@@ -31,8 +31,27 @@ $uriTaken = function (string $method, string $uri): bool {
 
 // /media/{path} — Plesk/Nginx-safe alternative to /storage/{path}.
 if (config('admin-core.routes.media', true) && ! $uriTaken('GET', '/media/{path}')) {
-    Route::get('/media/{path}', function (string $path) {
+
+    /**
+     * Strip leading `storage/` (any number of times) from the user-supplied
+     * path. Some upload handlers stitch `/storage/` onto an URL that already
+     * starts with `/storage/news/…`, giving the double-prefix path
+     * `/storage/storage/news/X.jpg` we've seen in ETU production HTML.
+     *
+     * Without this normalisation that URL redirects to `/media/storage/...`
+     * which fails the file lookup and 404s. Strip and recover.
+     */
+    $stripStoragePrefix = function (string $path): string {
+        $path = ltrim($path, '/');
+        while (str_starts_with($path, 'storage/')) {
+            $path = substr($path, strlen('storage/'));
+        }
+        return $path;
+    };
+
+    Route::get('/media/{path}', function (string $path) use ($stripStoragePrefix) {
         $path = str_replace('..', '', $path);
+        $path = $stripStoragePrefix($path);
 
         $candidates = [
             public_path('media/' . $path),
@@ -51,8 +70,8 @@ if (config('admin-core.routes.media', true) && ! $uriTaken('GET', '/media/{path}
     })->where('path', '.*')->name('media.serve');
 
     // 301 any legacy /storage/... URL to /media/..., so old HTML stays live.
-    Route::get('/storage/{path}', function (string $path) {
-        return redirect('/media/' . $path, 301);
+    Route::get('/storage/{path}', function (string $path) use ($stripStoragePrefix) {
+        return redirect('/media/' . $stripStoragePrefix($path), 301);
     })->where('path', '.*');
 }
 
