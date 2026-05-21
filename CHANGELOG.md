@@ -5,6 +5,39 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-05-21
+
+### Added
+- **`Meta\AdminCore\Support\LegacyBlocksCatalog`** — каталог из 34 общих
+  legacy-блоков для sister-сайтов на базе ETU/ETEC. Включает:
+  - 11 home-блоков (stat, metric, ui_element, heading, feature_card,
+    feature_item, news_card, program_card, admission_step, form_option,
+    programs)
+  - 8 green-deal-center секций (content-section, features-section,
+    news-section, research-section, publications-section, contacts-section,
+    rich-content, programs-table)
+  - 7 infrastructure-блоков (buildings, labs, gallery_slider,
+    it_infrastructure, sports, dormitories, virtual_tour)
+  - 7 misc-блоков (legal-document, achievements, faculty, contact, form,
+    settings, section-header)
+  - 1 menu_item (translatable header label)
+  - Расширенные schemas для admin-core `content` (15 типов sub-shape:
+    cards/features/items/programs/categories) и `partners-section`
+    (категория на каждом партнёре).
+- Consumer-сайты делают `extends LegacyBlocksCatalog` и переопределяют
+  только site-specific блоки (ETU: grid-cards с nested links;
+  ETEC: 21 flat-i18n тип).
+
+### Migration
+Существующие сайты с самописными `EtuBlockCatalog`-style классами
+переключаются одной строкой:
+```php
+// app/Support/EtuBlockCatalog.php
+- class EtuBlockCatalog extends DefaultBlockCatalog
++ class EtuBlockCatalog extends \Meta\AdminCore\Support\LegacyBlocksCatalog
+// удалить ETU_LEGACY_BLOCK_TYPES const + дублирующие методы schemas
+```
+
 ## [1.3.2] — 2026-05-21
 
 ### Fixed
