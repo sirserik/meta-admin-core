@@ -90,6 +90,19 @@ class AdminCoreServiceProvider extends ServiceProvider
                 'admin-core.ops-pin',
                 \Meta\AdminCore\Http\Middleware\EnsureOpsPinVerified::class
             );
+            // Security / runtime middleware (opt-in via aliases or config flags).
+            $this->app['router']->aliasMiddleware('admin-core.security-headers', \Meta\AdminCore\Http\Middleware\SecurityHeaders::class);
+            $this->app['router']->aliasMiddleware('admin-core.honeypot', \Meta\AdminCore\Http\Middleware\HoneypotProtection::class);
+            $this->app['router']->aliasMiddleware('admin-core.admin', \Meta\AdminCore\Http\Middleware\EnsureUserIsAdmin::class);
+            $this->app['router']->aliasMiddleware('admin-core.redirects', \Meta\AdminCore\Http\Middleware\HandleRedirects::class);
+
+            // Zero-wiring opt-in: auto-append to the `web` group when enabled.
+            if (config('admin-core.security.auto_headers', false)) {
+                $this->app['router']->pushMiddlewareToGroup('web', \Meta\AdminCore\Http\Middleware\SecurityHeaders::class);
+            }
+            if (config('admin-core.redirects_runtime', false)) {
+                $this->app['router']->pushMiddlewareToGroup('web', \Meta\AdminCore\Http\Middleware\HandleRedirects::class);
+            }
         }
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/recovery.php');

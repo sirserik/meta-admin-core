@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-06-02
+
+### Added
+- **Security & runtime middleware** (aliases; two auto-attachable to `web`):
+  - `admin-core.security-headers` (`SecurityHeaders`) — nosniff / X-Frame-Options /
+    Referrer-Policy / Permissions-Policy всегда; опц. HSTS; CSP из конфига
+    (`security.csp.directives`, Report-Only→enforce), пропускается на admin-префиксе.
+    Авто-подключение в `web` через `ADMIN_CORE_SECURITY_HEADERS=true`.
+  - `admin-core.honeypot` (`HoneypotProtection`) — скрытое поле + min-time anti-spam
+    для публичных форм (имя поля/время настраиваются).
+  - `admin-core.admin` (`EnsureUserIsAdmin`) — гейт админки: Gate `admin-core.access-admin`
+    → spatie `hasAnyRole(admin_roles)` → любой залогиненный (spatie опционален).
+  - `admin-core.redirects` (`HandleRedirects`) — 301/302 из таблицы `redirects` на GET,
+    кэш 5 мин, инкремент `hits`. Авто-подключение через `ADMIN_CORE_REDIRECTS_RUNTIME=true`.
+- **`Meta\AdminCore\Models\Redirect`** + миграция, добавляющая колонку `hits` в
+  `redirects` (guarded — no-op если уже есть/таблицы нет).
+- Конфиг-блок `admin-core.security` + `admin_roles`. Документация — `docs/security-middleware.md`.
+
 ## [1.6.0] — 2026-06-02
 
 ### Added

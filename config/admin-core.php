@@ -202,4 +202,43 @@ return [
         // paths (relative to base_path) included in the files backup
         'files_paths' => ['storage/app', 'public', '.env'],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Roles allowed into the admin panel (used by the `admin-core.admin`
+    | middleware when spatie/laravel-permission is present). With a Gate
+    | ability `admin-core.access-admin` defined, that wins instead.
+    |--------------------------------------------------------------------------
+    */
+    'admin_roles' => ['admin', 'super-admin', 'editor', 'moderator'],
+
+    // Apply admin-managed URL redirects on every web GET (HandleRedirects).
+    'redirects_runtime' => env('ADMIN_CORE_REDIRECTS_RUNTIME', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security response headers (SecurityHeaders middleware, alias
+    | `admin-core.security-headers`). `auto_headers=true` appends it to the
+    | `web` group automatically. Basic headers are always set; CSP is emitted
+    | only when `csp.directives` is non-empty and not on the admin prefix.
+    |--------------------------------------------------------------------------
+    */
+    'security' => [
+        'auto_headers'       => env('ADMIN_CORE_SECURITY_HEADERS', false),
+        'hsts'               => env('ADMIN_CORE_HSTS', false),
+        'frame_options'      => 'SAMEORIGIN',
+        'referrer_policy'    => 'strict-origin-when-cross-origin',
+        'permissions_policy' => 'camera=(), microphone=(), geolocation=()',
+        'honeypot' => [
+            'field'       => 'website_url',
+            'min_seconds' => 2,
+        ],
+        'csp' => [
+            'enforce'    => env('CSP_ENFORCE', false),
+            'report_uri' => env('CSP_REPORT_URI'),
+            // Empty = no CSP header. Provide a directives map per site, e.g.:
+            //   'default-src' => "'self'", 'img-src' => "'self' data: https:", ...
+            'directives' => [],
+        ],
+    ],
 ];
