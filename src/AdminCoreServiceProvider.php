@@ -138,6 +138,7 @@ class AdminCoreServiceProvider extends ServiceProvider
                 \Meta\AdminCore\Console\Commands\StorageFixPermissionsCommand::class,
                 \Meta\AdminCore\Console\Commands\StorageRelinkCommand::class,
                 \Meta\AdminCore\Console\Commands\StorageCleanupBackupCommand::class,
+                \Meta\AdminCore\Console\Commands\MediaCheckCommand::class,
                 \Meta\AdminCore\Console\Commands\ContentCleanupGdocsCommand::class,
                 \Meta\AdminCore\Console\Commands\ContentParagraphsToListsCommand::class,
                 \Meta\AdminCore\Console\Commands\ContentExtractBase64Command::class,

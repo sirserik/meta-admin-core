@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.10.0] — 2026-06-02
+
+### Added
+- **`admin-core:media-check`** + сервис **`Services\MediaIntegrity`** — находит «тихо битые»
+  медиа: файлы с расширением картинки/PDF, внутри которых на самом деле HTML (артефакт
+  краул/миграции — отдаются `200` с image-MIME по расширению, `curl` выглядит ок, но браузер
+  не рендерит). Проверка по СОДЕРЖИМОМУ, не по HTTP-статусу. Флаги: `--disk` (дефолт public),
+  `--dir` (подкаталог), `--from=<зеркало>` + `--fix` (починить из валидного зеркала, напр.
+  `public/media`), `--limit`. `MediaIntegrity::isCorrupt(ext, head)` — чистая, тестируемая
+  (svg/xml не флагаются; учитывает BOM). Дополняет семейство `admin-core:storage-*` из v1.6.
+
 ## [1.9.0] — 2026-06-02
 
 ### Added
