@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.9.0] — 2026-06-02
+
+### Added
+- **Document attachments** — полиморфная таблица `documents` + модель
+  `Meta\AdminCore\Models\Document` + трейт `Concerns\HasDocuments`
+  (`$model->documents`), заменяет per-parent копии (ArticleDocument/
+  NewsDocument). `DocumentController`: admin CRUD (`{prefix}/documents`) +
+  публичные download/view. **Файлы всегда отдаются как attachment** с nosniff
+  + `default-src 'none'` CSP (защита от payload в толерантных mime). Загрузка
+  ограничена `getSupportedFileTypes()` + allowlist `documents.attachable`.
+  Анонимный доступ гейтится контрактом `Contracts\PubliclyVisible` (файлы
+  неопубликованного родителя не утекают). Конфиг — `admin-core.documents`.
+- **`admin-core:revisions-prune`** — оставляет последние N ревизий на сущность
+  (Revisions фича копила вечно). `--keep`, `--dry-run`. DB-агностично.
+- **`admin-core:make-admin`** — создать/повысить админа из CLI (модель из
+  `auth.providers.users.model`, опц. роль spatie из `admin_roles`).
+- Документация — `docs/documents.md`.
+
 ## [1.8.0] — 2026-06-02
 
 ### Added

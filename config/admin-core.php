@@ -259,4 +259,19 @@ return [
             'directives' => [],
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Polymorphic document attachments (HasDocuments trait + DocumentController)
+    |
+    | `attachable` is the allowlist of model classes that may receive uploads
+    | — the store endpoint rejects anything else. Files go to the `public`
+    | disk under `dir`; `max_kb` caps upload size.
+    |--------------------------------------------------------------------------
+    */
+    'documents' => [
+        'dir'        => 'documents',
+        'max_kb'     => 51200,
+        'attachable' => [],   // e.g. [App\Models\Article::class, App\Models\News::class]
+    ],
 ];

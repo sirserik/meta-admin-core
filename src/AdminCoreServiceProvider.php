@@ -119,6 +119,9 @@ class AdminCoreServiceProvider extends ServiceProvider
         // 404s when the feature is disabled.
         $this->loadRoutesFrom(__DIR__ . '/../routes/backups.php');
 
+        // Polymorphic document attachments (HasDocuments + DocumentController).
+        $this->loadRoutesFrom(__DIR__ . '/../routes/documents.php');
+
         // Console commands
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -138,6 +141,8 @@ class AdminCoreServiceProvider extends ServiceProvider
                 \Meta\AdminCore\Console\Commands\ContentCleanupGdocsCommand::class,
                 \Meta\AdminCore\Console\Commands\ContentParagraphsToListsCommand::class,
                 \Meta\AdminCore\Console\Commands\ContentExtractBase64Command::class,
+                \Meta\AdminCore\Console\Commands\RevisionsPruneCommand::class,
+                \Meta\AdminCore\Console\Commands\MakeAdminCommand::class,
             ]);
         }
 
