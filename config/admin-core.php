@@ -217,6 +217,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Editor hygiene (admin-core:content-* commands + EditorHygiene service)
+    |
+    | Which table → columns the content-cleanup commands sweep. Defaults to
+    | admin-core-owned tables; consumer sites add their domain content
+    | (e.g. 'articles' => ['content','excerpt'], 'news' => [...]).
+    |--------------------------------------------------------------------------
+    */
+    'editor_hygiene' => [
+        'targets' => [
+            'translations' => ['value'],
+            'page_blocks'  => ['content', 'subtitle', 'data'],
+            'revisions'    => ['data'],
+        ],
+        'extract_dir' => 'uploads/extracted',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Security response headers (SecurityHeaders middleware, alias
     | `admin-core.security-headers`). `auto_headers=true` appends it to the
     | `web` group automatically. Basic headers are always set; CSP is emitted

@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-06-02
+
+### Added
+- **Editor hygiene** — чистка мусора rich-editor полей:
+  - **`Meta\AdminCore\Services\EditorHygiene`** — чистые трансформы
+    `cleanGoogleDocs()` / `paragraphsToLists()` / `extractBase64()`
+    (переиспользуемы на save; extractBase64 принимает `$persist`-callback —
+    storage-агностичен).
+  - Команды `admin-core:content-cleanup-gdocs` / `content-paragraphs-to-lists`
+    / `content-extract-base64` (все с `--dry-run`, `--target`). Свипят
+    таблицы из `admin-core.editor_hygiene.targets` (table⇒columns), отсутствующие
+    таблицы/колонки пропускаются. DB-driver-агностично (query builder, chunked).
+  - Конфиг-блок `admin-core.editor_hygiene`. Документация — `docs/editor-hygiene.md`.
+
 ## [1.7.0] — 2026-06-02
 
 ### Added
