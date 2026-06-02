@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-06-02
+
+### Added
+- **`FirewallFeature`** (opt-in, `FEATURE_FIREWALL=true`) — управление списком
+  IP для входа по SSH (порт 22) прямо из админки, без выдачи веб-процессу
+  никаких привилегий. Ключевая ценность — изоляция привилегий:
+  - админ-страница ТОЛЬКО пишет строки в таблицу `firewall_rules`;
+  - применяет ufw отдельный **root-cron скрипт** (генерится командой
+    `php artisan admin-core:firewall-sync-script`) — root никогда не
+    исполняет PHP приложения (минимальная поверхность атаки);
+  - `emergency_ip` вшит в скрипт → список не может опустеть, лок-аут
+    невозможен.
+  - Self-contained Blade-страница `/{prefix}/firewall` (намеренно НЕ SPA —
+    это break-glass инструмент, должен работать даже при сломанном
+    SPA-билде). 404-ит, когда фича выключена.
+  - Скрипт синхронизации DB-агностичен: pgsql / mysql / sqlite (годится и
+    для Postgres-серверов, и для SQLite-сайтов типа ETEC).
+  - Опциональный step-up gate через `admin-core.firewall.gate` (например
+    ops-PIN middleware).
+  - Состав: `Models\FirewallRule` (+ валидатор IPv4/CIDR), миграция
+    `firewall_rules`, `Http\Controllers\FirewallController`, вьюха
+    `admin-core::firewall`, `routes/firewall.php`, команда
+    `admin-core:firewall-sync-script`. Конфиг — блок `admin-core.firewall`.
+  - Установка root-скрипта — единственный ручной (привилегированный) шаг,
+    пакет его не делает из PHP. См. `docs/firewall.md`.
+
 ## [1.4.0] — 2026-05-21
 
 ### Added

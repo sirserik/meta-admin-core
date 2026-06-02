@@ -21,6 +21,7 @@ class AdminCoreServiceProvider extends ServiceProvider
             \Meta\AdminCore\Features\GreenDealFeature::class,
             \Meta\AdminCore\Features\SdgFeature::class,
             \Meta\AdminCore\Features\ProcurementsFeature::class,
+            \Meta\AdminCore\Features\FirewallFeature::class,
         ];
     }
 
@@ -86,6 +87,11 @@ class AdminCoreServiceProvider extends ServiceProvider
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/recovery.php');
 
+        // SSH firewall allow-list (opt-in FirewallFeature). Always loaded;
+        // the controller 404s when the feature is disabled, so it no-ops on
+        // sites that don't use it.
+        $this->loadRoutesFrom(__DIR__ . '/../routes/firewall.php');
+
         // Console commands
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -96,6 +102,7 @@ class AdminCoreServiceProvider extends ServiceProvider
                 \Meta\AdminCore\Console\Commands\MigrateToDocumentListCommand::class,
                 \Meta\AdminCore\Console\Commands\MakeBlockCommand::class,
                 \Meta\AdminCore\Console\Commands\MigrateMorphTypesCommand::class,
+                \Meta\AdminCore\Console\Commands\FirewallSyncScriptCommand::class,
             ]);
         }
 

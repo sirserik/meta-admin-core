@@ -138,8 +138,31 @@ return [
         'projects'      => env('FEATURE_PROJECTS',     false),
         'redirects'     => env('FEATURE_REDIRECTS',    true),
 
+        // Server ops (self-hosted nodes with ufw)
+        'firewall'      => env('FEATURE_FIREWALL',     false),
+
         // Inbox
         'leads'             => env('FEATURE_LEADS',             true),
         'rector_questions'  => env('FEATURE_RECTOR_QUESTIONS',  false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | SSH firewall allow-list (opt-in FirewallFeature, FEATURE_FIREWALL=true)
+    |
+    | The admin page only writes rows into `firewall_rules`; a ROOT cron
+    | script (emitted by `php artisan admin-core:firewall-sync-script`)
+    | reconciles ufw with the table. `emergency_ip` is baked into that
+    | script so the list can never go empty and lock you out — SET IT.
+    |
+    | `gate` is an optional step-up middleware alias applied on top of the
+    | normal admin middleware (e.g. an ops-PIN gate); null = none.
+    |--------------------------------------------------------------------------
+    */
+    'firewall' => [
+        'emergency_ip' => env('FIREWALL_EMERGENCY_IP'),
+        'table'        => 'firewall_rules',
+        'ufw_comment'  => env('FIREWALL_UFW_COMMENT', 'admin-core-allowlist'),
+        'gate'         => env('FIREWALL_GATE_MIDDLEWARE'),
     ],
 ];
