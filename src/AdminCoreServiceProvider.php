@@ -22,6 +22,7 @@ class AdminCoreServiceProvider extends ServiceProvider
             \Meta\AdminCore\Features\SdgFeature::class,
             \Meta\AdminCore\Features\ProcurementsFeature::class,
             \Meta\AdminCore\Features\FirewallFeature::class,
+            \Meta\AdminCore\Features\BackupFeature::class,
         ];
     }
 
@@ -83,14 +84,27 @@ class AdminCoreServiceProvider extends ServiceProvider
                 'admin-core.recovery.pin',
                 \Meta\AdminCore\Http\Middleware\EnsureRecoveryPinVerified::class
             );
+            // Step-up ops-PIN gate for server-ops pages (firewall, backups).
+            // No-op when no PIN configured, so always-on in routes is safe.
+            $this->app['router']->aliasMiddleware(
+                'admin-core.ops-pin',
+                \Meta\AdminCore\Http\Middleware\EnsureOpsPinVerified::class
+            );
         }
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/recovery.php');
+
+        // Step-up ops-PIN unlock/lock page (used by firewall + backups).
+        $this->loadRoutesFrom(__DIR__ . '/../routes/ops.php');
 
         // SSH firewall allow-list (opt-in FirewallFeature). Always loaded;
         // the controller 404s when the feature is disabled, so it no-ops on
         // sites that don't use it.
         $this->loadRoutesFrom(__DIR__ . '/../routes/firewall.php');
+
+        // Server backups (opt-in BackupFeature). Always loaded; controller
+        // 404s when the feature is disabled.
+        $this->loadRoutesFrom(__DIR__ . '/../routes/backups.php');
 
         // Console commands
         if ($this->app->runningInConsole()) {
@@ -103,6 +117,11 @@ class AdminCoreServiceProvider extends ServiceProvider
                 \Meta\AdminCore\Console\Commands\MakeBlockCommand::class,
                 \Meta\AdminCore\Console\Commands\MigrateMorphTypesCommand::class,
                 \Meta\AdminCore\Console\Commands\FirewallSyncScriptCommand::class,
+                \Meta\AdminCore\Console\Commands\BackupAgentScriptCommand::class,
+                \Meta\AdminCore\Console\Commands\StorageCheckCommand::class,
+                \Meta\AdminCore\Console\Commands\StorageFixPermissionsCommand::class,
+                \Meta\AdminCore\Console\Commands\StorageRelinkCommand::class,
+                \Meta\AdminCore\Console\Commands\StorageCleanupBackupCommand::class,
             ]);
         }
 

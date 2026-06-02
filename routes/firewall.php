@@ -20,7 +20,8 @@ $prefix = trim((string) config('admin-core.prefix', 'admin'), '/');
 $middleware = array_merge(
     ['web'],
     (array) config('admin-core.middleware', ['auth', 'verified']),
-    array_filter([config('admin-core.firewall.gate')]),
+    ['admin-core.ops-pin'],                          // step-up PIN (no-op when unset)
+    array_filter([config('admin-core.firewall.gate')]), // extra custom gate, optional
 );
 
 Route::middleware($middleware)

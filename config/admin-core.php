@@ -138,8 +138,9 @@ return [
         'projects'      => env('FEATURE_PROJECTS',     false),
         'redirects'     => env('FEATURE_REDIRECTS',    true),
 
-        // Server ops (self-hosted nodes with ufw)
+        // Server ops (self-hosted nodes)
         'firewall'      => env('FEATURE_FIREWALL',     false),
+        'backup'        => env('FEATURE_BACKUP',       false),
 
         // Inbox
         'leads'             => env('FEATURE_LEADS',             true),
@@ -164,5 +165,41 @@ return [
         'table'        => 'firewall_rules',
         'ufw_comment'  => env('FIREWALL_UFW_COMMENT', 'admin-core-allowlist'),
         'gate'         => env('FIREWALL_GATE_MIDDLEWARE'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step-up ops PIN (server-ops pages: firewall, backups)
+    |
+    | When a PIN is set, the `admin-core.ops-pin` middleware requires it on
+    | top of admin auth, re-prompting every `ttl` seconds. Empty PIN = the
+    | gate is a no-op (server-ops pages stay behind plain admin auth).
+    |--------------------------------------------------------------------------
+    */
+    'ops_pin' => [
+        'pin' => env('ADMIN_OPS_PIN'),
+        'ttl' => (int) env('ADMIN_OPS_PIN_TTL', 1800),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Server backups (opt-in BackupFeature, FEATURE_BACKUP=true)
+    |
+    | Privilege-isolated like the firewall: the admin page only drops request
+    | files into `spool`; a ROOT cron agent (emitted by
+    | `php artisan admin-core:backup-agent-script`) performs dumps/restores
+    | and writes status.json. The web process reads/downloads/deletes backup
+    | files (the dirs are group-readable) but never runs privileged ops.
+    | DB-agnostic agent: pgsql / mysql / sqlite.
+    |--------------------------------------------------------------------------
+    */
+    'backup' => [
+        'db_dir'    => env('BACKUP_DB_DIR', '/var/backups/' . env('BACKUP_PREFIX', 'app') . '/db'),
+        'files_dir' => env('BACKUP_FILES_DIR', '/var/backups/' . env('BACKUP_PREFIX', 'app') . '/files'),
+        'spool'     => env('BACKUP_SPOOL', '/var/spool/admin-core-ops'),
+        'prefix'    => env('BACKUP_PREFIX', 'app'),       // db dump filename prefix
+        'keep_days' => (int) env('BACKUP_KEEP_DAYS', 30),
+        // paths (relative to base_path) included in the files backup
+        'files_paths' => ['storage/app', 'public', '.env'],
     ],
 ];

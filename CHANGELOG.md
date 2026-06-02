@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-06-02
+
+### Added
+- **Server Ops** — серверное самообслуживание из админки с изоляцией
+  привилегий (PHP пишет запрос, root-cron исполняет, root не запускает PHP):
+  - **`BackupFeature`** (opt-in `FEATURE_BACKUP`) — создание/скачивание/
+    восстановление бэкапов БД и файлов на `/{prefix}/backups`. Контроллер
+    кладёт JSON-запрос в spool; root-агент (`admin-core:backup-agent-script`)
+    делает дампы/restore и пишет `status.json`. Restore всегда снимает
+    защитную `pre-restore-*` копию. **DB-агностично** (pgsql/mysql/sqlite).
+    Заменяет на self-hosted-нодах старый in-process `/{prefix}/backup`
+    (SQLite-zip остаётся для Plesk/managed). Конфиг — `admin-core.backup`.
+  - **Step-up ops-PIN gate** — middleware-алиас `admin-core.ops-pin` +
+    `OpsPinController` + страница `/{prefix}/unlock`. Второй фактор поверх
+    admin-авторизации для firewall/backups; no-op без `ADMIN_OPS_PIN`.
+    Firewall-маршруты теперь по умолчанию проходят через этот гейт.
+  - **Storage-команды** — `admin-core:storage-check` / `storage-relink` /
+    `storage-fix-permissions` / `storage-cleanup-backup` (лечат 403/битые
+    медиа и неправильный `public/storage`).
+- Документация — `docs/server-ops.md`.
+
 ## [1.5.0] — 2026-06-02
 
 ### Added
