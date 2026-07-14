@@ -97,6 +97,12 @@ function setTRow(field, i, subKey, locale, value) {
     arr[i] = row;
     setArray(field.key, arr);
 }
+// Top-level translatable field: flip one locale on data[key]'s {ru,kk,en} map.
+function setTField(key, locale, value) {
+    const cur = data.value[key];
+    const existing = (cur && typeof cur === 'object') ? cur : { ru: '', kk: '', en: '' };
+    setField(key, { ...existing, [locale]: value });
+}
 
 // ===== Uploads =====
 
@@ -492,6 +498,52 @@ function openPreview(url, filename) {
                         <i class="fas fa-file-arrow-up text-xs mr-1"></i>Файл
                         <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden" @change="pickFile($event, res => setField(field.key, res.url))">
                     </label>
+                </div>
+
+                <div v-else-if="field.type === 'translatable'" class="space-y-1">
+                    <input type="text"
+                        :value="tVal(data, field.key, activeLocale)"
+                        @input="e => setTField(field.key, activeLocale, e.target.value)"
+                        :placeholder="field.placeholder || activeLocale.toUpperCase()"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                </div>
+
+                <div v-else-if="field.type === 'translatable_textarea'" class="space-y-1">
+                    <textarea rows="3"
+                        :value="tVal(data, field.key, activeLocale)"
+                        @input="e => setTField(field.key, activeLocale, e.target.value)"
+                        :placeholder="field.placeholder || activeLocale.toUpperCase()"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"></textarea>
+                </div>
+
+                <div v-else-if="field.type === 'translatable_file'" class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <input type="text"
+                            :value="tVal(data, field.key, activeLocale)"
+                            @input="e => setTField(field.key, activeLocale, e.target.value)"
+                            :placeholder="'URL ' + activeLocale.toUpperCase()"
+                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                        <label class="flex-shrink-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-lg text-sm cursor-pointer text-gray-700 dark:text-gray-200" title="PDF, DOC, XLS, ZIP…">
+                            <i class="fas fa-file-arrow-up text-xs mr-1"></i>{{ activeLocale.toUpperCase() }}
+                            <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.rtf,.csv" class="hidden"
+                                @change="pickFile($event, res => setTField(field.key, activeLocale, res.url))">
+                        </label>
+                    </div>
+                    <button v-if="tVal(data, field.key, activeLocale)" type="button"
+                        @click="openPreview(tVal(data, field.key, activeLocale), field.label)"
+                        class="w-full flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 hover:bg-white dark:hover:bg-gray-800 hover:border-red-300 transition text-left">
+                        <div class="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+                            :style="{ background: fileIcon(tVal(data, field.key, activeLocale)).color + '20', color: fileIcon(tVal(data, field.key, activeLocale)).color }">
+                            <i :class="'fas ' + fileIcon(tVal(data, field.key, activeLocale)).icon"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ fileNameFromUrl(tVal(data, field.key, activeLocale)) }}</div>
+                            <div class="text-xs text-gray-500 flex items-center gap-1.5">
+                                <span class="uppercase">{{ fileExtension(tVal(data, field.key, activeLocale)) || 'file' }}</span>
+                                <span class="ml-1 px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-[10px]">{{ activeLocale.toUpperCase() }}</span>
+                            </div>
+                        </div>
+                    </button>
                 </div>
 
                 <input v-else :type="field.type === 'url' ? 'url' : field.type === 'number' ? 'number' : 'text'"

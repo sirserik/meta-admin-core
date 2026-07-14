@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-07-14
+
+### Fixed
+- **`BlockDataEditor` — редактор переводимых полей ВЕРХНЕГО уровня.** Раньше
+  виджеты `translatable` / `translatable_textarea` / `translatable_file`
+  работали только для под-полей внутри массивов (`item_fields`); те же типы
+  на верхнем уровне схемы (напр. `badge`, `heading` у `documents-i18n`)
+  попадали в обычный `<input>` и показывали `[object Object]` — а сохранение
+  превращало `{ru,kk,en}`-карту в строку одной локали. Добавлены top-level
+  ветки для всех трёх типов + хелпер `setTField(key, locale, value)`
+  (по образцу `setTRow`). Локаль-пикер уже учитывал верхний уровень. Теперь
+  бейдж/заголовок секции редактируются по языкам как обычные карточки.
+
 ## [1.10.0] — 2026-06-02
 
 ### Added
