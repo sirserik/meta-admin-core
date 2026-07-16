@@ -118,6 +118,24 @@ class MediaController extends Controller
         return back()->with('success', 'Файл обновлён');
     }
 
+    /**
+     * Rotate an image in place (same path — all references stay valid)
+     * and refresh the record's dimensions/size.
+     */
+    public function rotate(Request $request, int $id): RedirectResponse
+    {
+        $medium = Media::findOrFail($id);
+        $data = $request->validate(['degrees' => 'required|integer|in:90,180,270,-90']);
+
+        $meta = $this->imageService->rotate($medium->path, (int) $data['degrees']);
+        if (!$meta) {
+            return back()->with('error', 'Файл не найден или формат не поддерживает поворот');
+        }
+
+        $medium->update(['width' => $meta['width'], 'height' => $meta['height'], 'size' => $meta['size']]);
+        return back()->with('success', 'Изображение повёрнуто');
+    }
+
     public function destroy(int $id): RedirectResponse
     {
         $medium = Media::findOrFail($id);

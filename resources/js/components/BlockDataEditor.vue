@@ -143,6 +143,27 @@ async function pickFile(e, onSet) {
     finally { e.target.value = ''; }
 }
 
+// ===== Поворот загруженной картинки =====
+// Крутится на сервере на месте (значение поля/URL не меняется),
+// поэтому превью обновляем локальным cache-buster'ом.
+const imgBust = ref({});
+const isRotatableImage = (url) => typeof url === 'string' && /\.(jpe?g|png|gif|webp)$/i.test((url.split('?')[0] || ''));
+const thumbSrc = (url) => url + (imgBust.value[url] ? (url.includes('?') ? '&' : '?') + 'v=' + imgBust.value[url] : '');
+async function rotateImage(url) {
+    if (!url) return;
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    try {
+        const res = await fetch('/admin/upload/rotate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            body: JSON.stringify({ path: url, degrees: 90 }),
+        });
+        const data = await res.json();
+        if (data.success) imgBust.value = { ...imgBust.value, [url]: Date.now() };
+        else alert(data.message || 'Не удалось повернуть изображение');
+    } catch { alert('Не удалось повернуть изображение'); }
+}
+
 // ===== Icon picker popup state =====
 const iconPickerOpen = ref(null); // object { setter, close }
 const ICON_SUGGESTIONS = [
@@ -352,15 +373,24 @@ function openPreview(url, filename) {
                                         @input="e => updateRow(field, i, sub.key, e.target.value)"
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"></textarea>
 
-                                <div v-else-if="sub.type === 'image'" class="flex items-center gap-2">
-                                    <input type="text" placeholder="URL или путь"
-                                        :value="row[sub.key] ?? ''"
-                                        @input="e => updateRow(field, i, sub.key, e.target.value)"
-                                        class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
-                                    <label class="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200">
-                                        <i class="fas fa-upload text-xs"></i>
-                                        <input type="file" accept="image/*" class="hidden" @change="pickImage($event, url => updateRow(field, i, sub.key, url))">
-                                    </label>
+                                <div v-else-if="sub.type === 'image'" class="space-y-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" placeholder="URL или путь"
+                                            :value="row[sub.key] ?? ''"
+                                            @input="e => updateRow(field, i, sub.key, e.target.value)"
+                                            class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                                        <label class="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200">
+                                            <i class="fas fa-upload text-xs"></i>
+                                            <input type="file" accept="image/*" class="hidden" @change="pickImage($event, url => updateRow(field, i, sub.key, url))">
+                                        </label>
+                                    </div>
+                                    <div v-if="isRotatableImage(row[sub.key])" class="flex items-center gap-2">
+                                        <img :src="thumbSrc(row[sub.key])" class="h-12 w-20 object-contain rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                                        <button type="button" @click="rotateImage(row[sub.key])" title="Повернуть на 90° по часовой"
+                                            class="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-xs text-gray-700 dark:text-gray-200">
+                                            <i class="fas fa-rotate-right"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div v-else-if="sub.type === 'file'" class="space-y-2">
@@ -478,15 +508,24 @@ function openPreview(url, filename) {
                     @input="e => setField(field.key, e.target.value)"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"></textarea>
 
-                <div v-else-if="field.type === 'image'" class="flex items-center gap-2">
-                    <input type="text" placeholder="URL или путь"
-                        :value="data[field.key] ?? ''"
-                        @input="e => setField(field.key, e.target.value)"
-                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
-                    <label class="flex-shrink-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-lg text-sm cursor-pointer text-gray-700 dark:text-gray-200">
-                        <i class="fas fa-upload text-xs mr-1"></i>Загрузить
-                        <input type="file" accept="image/*" class="hidden" @change="pickImage($event, url => setField(field.key, url))">
-                    </label>
+                <div v-else-if="field.type === 'image'" class="space-y-1.5">
+                    <div class="flex items-center gap-2">
+                        <input type="text" placeholder="URL или путь"
+                            :value="data[field.key] ?? ''"
+                            @input="e => setField(field.key, e.target.value)"
+                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                        <label class="flex-shrink-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-lg text-sm cursor-pointer text-gray-700 dark:text-gray-200">
+                            <i class="fas fa-upload text-xs mr-1"></i>Загрузить
+                            <input type="file" accept="image/*" class="hidden" @change="pickImage($event, url => setField(field.key, url))">
+                        </label>
+                    </div>
+                    <div v-if="isRotatableImage(data[field.key])" class="flex items-center gap-2">
+                        <img :src="thumbSrc(data[field.key])" class="h-14 w-24 object-contain rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                        <button type="button" @click="rotateImage(data[field.key])" title="Повернуть на 90° по часовой"
+                            class="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-xs text-gray-700 dark:text-gray-200">
+                            <i class="fas fa-rotate-right"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div v-else-if="field.type === 'file'" class="flex items-center gap-2">

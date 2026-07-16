@@ -78,6 +78,75 @@ class ImageService
         return $this->upload($file, $folder, $d['width'], $d['height']);
     }
 
+    /**
+     * Rotate a stored raster image IN PLACE (same path, same format), so
+     * every reference to the file — page_blocks JSON, model columns,
+     * rich-text content — stays valid. Positive $degrees = clockwise.
+     *
+     * Returns fresh metadata ['width','height','size'] or null when the
+     * file is missing / not a rotatable raster (SVG is refused).
+     */
+    public function rotate(string $path, int $degrees): ?array
+    {
+        $degrees = ((($degrees % 360) + 360) % 360);
+        if (!in_array($degrees, [90, 180, 270], true)) return null;
+
+        $cleanPath = ltrim(preg_replace('#^/?storage/#', '', $path), '/');
+        if (str_contains($cleanPath, '..')) return null;
+
+        $disk = Storage::disk('public');
+        if (!$disk->exists($cleanPath)) return null;
+
+        $abs = $disk->path($cleanPath);
+        $ext = strtolower(pathinfo($cleanPath, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) return null;
+
+        if (class_exists(\Intervention\Image\Laravel\Facades\Image::class)) {
+            try {
+                $image = \Intervention\Image\Laravel\Facades\Image::read($abs);
+                // Intervention rotates counter-clockwise for positive angles
+                $image->rotate(-$degrees);
+                $image->save($abs);
+                return $this->fileMeta($disk, $cleanPath);
+            } catch (\Throwable) {
+                // fall through to GD
+            }
+        }
+
+        return $this->rotateWithGd($abs, $ext, $degrees)
+            ? $this->fileMeta($disk, $cleanPath)
+            : null;
+    }
+
+    protected function fileMeta($disk, string $cleanPath): array
+    {
+        [$w, $h] = @getimagesize($disk->path($cleanPath)) ?: [null, null];
+        return ['width' => $w, 'height' => $h, 'size' => $disk->size($cleanPath)];
+    }
+
+    protected function rotateWithGd(string $abs, string $ext, int $degreesCw): bool
+    {
+        $read  = ['jpg' => 'imagecreatefromjpeg', 'jpeg' => 'imagecreatefromjpeg', 'png' => 'imagecreatefrompng', 'gif' => 'imagecreatefromgif', 'webp' => 'imagecreatefromwebp'][$ext] ?? null;
+        $write = ['jpg' => 'imagejpeg', 'jpeg' => 'imagejpeg', 'png' => 'imagepng', 'gif' => 'imagegif', 'webp' => 'imagewebp'][$ext] ?? null;
+        if (!$read || !$write || !function_exists($read) || !function_exists($write)) return false;
+
+        $src = @$read($abs);
+        if (!$src) return false;
+
+        if (in_array($ext, ['png', 'gif', 'webp'], true)) {
+            imagesavealpha($src, true);
+        }
+        // GD rotates counter-clockwise for positive angles
+        $dst = imagerotate($src, -$degreesCw, 0);
+        if (!$dst) return false;
+        if (in_array($ext, ['png', 'gif', 'webp'], true)) {
+            imagesavealpha($dst, true);
+        }
+
+        $ok = in_array($ext, ['jpg', 'jpeg', 'webp'], true) ? $write($dst, $abs, 90) : $write($dst, $abs);
+        return (bool) $ok;
+    }
+
     public function delete(?string $path): bool
     {
         if (empty($path)) return false;

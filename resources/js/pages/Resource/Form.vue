@@ -61,6 +61,63 @@ function removeImage() {
     existingImageUrl.value = null;
 }
 
+// ----- Поворот изображения на 90° -----
+// Новый (ещё не загруженный) файл крутим на canvas до отправки;
+// уже сохранённый — на сервере, на месте (путь не меняется).
+const rotating = ref(false);
+async function rotateImage() {
+    if (rotating.value) return;
+    if (form[props.image_field] instanceof File) {
+        rotating.value = true;
+        try {
+            const rotated = await rotateFileClockwise(form[props.image_field]);
+            form[props.image_field] = rotated;
+            const r = new FileReader();
+            r.onload = ev => (imagePreview.value = ev.target.result);
+            r.readAsDataURL(rotated);
+        } finally { rotating.value = false; }
+        return;
+    }
+    if (!existingImageUrl.value) return;
+    rotating.value = true;
+    try {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const res = await fetch('/admin/upload/rotate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            body: JSON.stringify({ path: existingImageUrl.value, degrees: 90 }),
+        });
+        const data = await res.json();
+        if (data.success) existingImageUrl.value = data.url;
+        else alert(data.message || 'Не удалось повернуть изображение');
+    } catch { alert('Не удалось повернуть изображение'); }
+    finally { rotating.value = false; }
+}
+
+function rotateFileClockwise(file) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalHeight;
+            canvas.height = img.naturalWidth;
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, 0, 0);
+            URL.revokeObjectURL(url);
+            const type = file.type === 'image/png' ? 'image/png' : file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+            canvas.toBlob(
+                b => b ? resolve(new File([b], file.name, { type })) : reject(new Error('rotate failed')),
+                type, 0.92,
+            );
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load failed')); };
+        img.src = url;
+    });
+}
+
 function submit() {
     const key = props.item?._route_key ?? props.item?.id;
     const url = props.is_edit
@@ -242,6 +299,10 @@ const hasTranslatableAnywhere = computed(() =>
                     </h3>
                     <div v-if="imagePreview || existingImageUrl" class="relative mb-3">
                         <img :src="imagePreview || existingImageUrl" class="w-full rounded-lg object-cover max-h-60">
+                        <button type="button" @click="rotateImage" title="Повернуть на 90° по часовой" :disabled="rotating"
+                            class="absolute top-2 right-12 w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 text-gray-700 dark:text-gray-200 flex items-center justify-center shadow hover:bg-white disabled:opacity-50">
+                            <i class="fas text-sm" :class="rotating ? 'fa-spinner fa-spin' : 'fa-rotate-right'"></i>
+                        </button>
                         <button type="button" @click="removeImage" title="Удалить"
                             class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow hover:bg-red-700">
                             <i class="fas fa-times text-sm"></i>

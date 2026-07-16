@@ -42,6 +42,17 @@ function destroy(m) {
     router.delete(`/admin/media/${m.id}`, { preserveScroll: true });
 }
 
+// Поворот на месте (путь не меняется) → превью обновляем cache-buster'ом
+const rotatedAt = ref({});
+const canRotate = (m) => m.is_image && m.mime_type !== 'image/svg+xml';
+function rotate(m) {
+    router.post(`/admin/media/${m.id}/rotate`, { degrees: 90 }, {
+        preserveScroll: true,
+        onSuccess: () => { rotatedAt.value = { ...rotatedAt.value, [m.id]: Date.now() }; },
+    });
+}
+const bustedUrl = (m) => m.url + (rotatedAt.value[m.id] ? `?v=${rotatedAt.value[m.id]}` : '');
+
 function humanSize(b) {
     if (!b) return '0 Б';
     const u = ['Б', 'КБ', 'МБ', 'ГБ']; let i = 0;
@@ -83,7 +94,7 @@ function humanSize(b) {
         <div v-for="m in items.data" :key="m.id"
             class="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition">
             <div class="aspect-square flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-                <img v-if="m.is_image" :src="m.url" :alt="m.alt || m.filename" class="w-full h-full object-cover">
+                <img v-if="m.is_image" :src="bustedUrl(m)" :alt="m.alt || m.filename" class="w-full h-full object-cover">
                 <i v-else class="fas fa-file text-3xl text-gray-400"></i>
             </div>
             <div class="p-2">
@@ -94,6 +105,10 @@ function humanSize(b) {
                 </div>
             </div>
             <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition flex gap-1">
+                <button v-if="canRotate(m)" @click="rotate(m)"
+                    class="w-7 h-7 rounded-full bg-white/90 dark:bg-gray-900/90 text-gray-700 flex items-center justify-center text-xs" title="Повернуть на 90° по часовой">
+                    <i class="fas fa-rotate-right"></i>
+                </button>
                 <button @click="navigator.clipboard.writeText(m.url)"
                     class="w-7 h-7 rounded-full bg-white/90 dark:bg-gray-900/90 text-gray-700 flex items-center justify-center text-xs" title="Скопировать URL">
                     <i class="fas fa-copy"></i>

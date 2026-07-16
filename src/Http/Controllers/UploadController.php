@@ -40,6 +40,44 @@ class UploadController extends Controller
         return response()->json(['success' => true, 'url' => media_url($path)]);
     }
 
+    /**
+     * Rotate an already-uploaded image in place (90/180/270° clockwise).
+     * Accepts a path or a full media URL; the file keeps its path, so all
+     * references (blocks JSON, model columns, editor content) stay valid.
+     * A linked Media record, if any, gets fresh width/height/size.
+     */
+    public function rotateImage(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'path'    => 'required|string|max:2048',
+            'degrees' => 'required|integer|in:90,180,270,-90',
+        ]);
+
+        // полный URL или /storage-префикс → путь внутри public-диска
+        $path = parse_url($data['path'], PHP_URL_PATH) ?? $data['path'];
+        $path = ltrim(preg_replace('#^/?(storage|media)/#', '', $path), '/');
+
+        $meta = $this->imageService->rotate($path, (int) $data['degrees']);
+        if (!$meta) {
+            return response()->json(['success' => false, 'message' => 'Файл не найден или формат не поддерживает поворот'], 422);
+        }
+
+        \Meta\AdminCore\Models\Media::where('path', $path)->update([
+            'width'  => $meta['width'],
+            'height' => $meta['height'],
+            'size'   => $meta['size'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            // тот же путь; ?v= — только для обновления превью в админке
+            'url'     => media_url($path) . '?v=' . time(),
+            'path'    => $path,
+            'width'   => $meta['width'],
+            'height'  => $meta['height'],
+        ]);
+    }
+
     public function uploadFile(Request $request): JsonResponse
     {
         $request->validate([

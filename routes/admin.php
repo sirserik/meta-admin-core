@@ -62,11 +62,13 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     // shadow this by default (they register first).
     Route::post('/upload/image', [\Meta\AdminCore\Http\Controllers\UploadController::class, 'uploadImage'])->name('upload.image.package');
     Route::post('/upload/file',  [\Meta\AdminCore\Http\Controllers\UploadController::class, 'uploadFile'])->name('upload.file');
+    Route::post('/upload/rotate-image', [\Meta\AdminCore\Http\Controllers\UploadController::class, 'rotateImage'])->name('upload.rotate-image');
 
     // Media library
     Route::get(   '/media',          [\Meta\AdminCore\Http\Controllers\MediaController::class, 'index'])->name('media.index');
     Route::post(  '/media',          [\Meta\AdminCore\Http\Controllers\MediaController::class, 'store'])->name('media.store');
     Route::put(   '/media/{medium}', [\Meta\AdminCore\Http\Controllers\MediaController::class, 'update'])->name('media.update');
+    Route::post(  '/media/{medium}/rotate', [\Meta\AdminCore\Http\Controllers\MediaController::class, 'rotate'])->name('media.rotate');
     Route::delete('/media/{medium}', [\Meta\AdminCore\Http\Controllers\MediaController::class, 'destroy'])->name('media.destroy');
 
     // Key-value settings (name/email/phone/social-links text-style rows).
