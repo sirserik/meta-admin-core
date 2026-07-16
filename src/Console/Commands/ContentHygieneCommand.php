@@ -54,10 +54,19 @@ abstract class ContentHygieneCommand extends Command
         }
         $this->line("-- {$table} --");
 
+        // LIKE fails outright on json/jsonb columns (PG), so compare a
+        // text-cast of every column. These are full-scan '%…%' predicates —
+        // no index was ever in play, the cast costs nothing.
+        $castTpl = match (DB::connection()->getDriverName()) {
+            'mysql', 'mariadb' => 'CAST(%s AS CHAR)',
+            default            => 'CAST(%s AS TEXT)',
+        };
+
         $where = [];
         foreach ($columns as $c) {
+            $cast = sprintf($castTpl, $c);
             foreach ($this->needles() as $n) {
-                $where[] = "{$c} {$n}";
+                $where[] = "{$cast} {$n}";
             }
         }
         $whereSql = '(' . implode(' OR ', $where) . ')';
