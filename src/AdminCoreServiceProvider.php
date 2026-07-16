@@ -142,6 +142,8 @@ class AdminCoreServiceProvider extends ServiceProvider
                 \Meta\AdminCore\Console\Commands\ContentCleanupGdocsCommand::class,
                 \Meta\AdminCore\Console\Commands\ContentParagraphsToListsCommand::class,
                 \Meta\AdminCore\Console\Commands\ContentExtractBase64Command::class,
+                \Meta\AdminCore\Console\Commands\ContentCleanupEditorCommand::class,
+                \Meta\AdminCore\Console\Commands\TranslationsSplitCommand::class,
                 \Meta\AdminCore\Console\Commands\RevisionsPruneCommand::class,
                 \Meta\AdminCore\Console\Commands\MakeAdminCommand::class,
             ]);

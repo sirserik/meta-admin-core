@@ -46,6 +46,32 @@ class EditorHygieneTest extends TestCase
         $this->assertSame($in, EditorHygiene::paragraphsToLists($in));
     }
 
+    public function test_clean_editor_artifacts_unwraps_li_p(): void
+    {
+        $in = '<ul><li><p><a href="/media/doc.pdf">Doc (PDF)</a></p></li><li><p>Plain</p></li></ul>';
+        $out = EditorHygiene::cleanEditorArtifacts($in);
+        $this->assertSame('<ul><li><a href="/media/doc.pdf">Doc (PDF)</a></li><li>Plain</li></ul>', $out);
+    }
+
+    public function test_clean_editor_artifacts_keeps_multi_paragraph_li(): void
+    {
+        $in = '<ul><li><p>Первый абзац</p><p>Второй абзац</p></li></ul>';
+        $this->assertSame($in, EditorHygiene::cleanEditorArtifacts($in));
+    }
+
+    public function test_clean_editor_artifacts_removes_empty_paragraphs(): void
+    {
+        $in = '<p></p><h3>Title</h3><p>Keep</p><p>&nbsp;</p><p><br></p><p class="x"> </p>';
+        $out = EditorHygiene::cleanEditorArtifacts($in);
+        $this->assertSame('<h3>Title</h3><p>Keep</p>', $out);
+    }
+
+    public function test_clean_editor_artifacts_leaves_styles_and_spans_alone(): void
+    {
+        $in = '<p style="color:#C41E3A"><span style="font-weight:700">Hi</span></p>';
+        $this->assertSame($in, EditorHygiene::cleanEditorArtifacts($in));
+    }
+
     public function test_extract_base64_replaces_with_url_and_persists(): void
     {
         // 1x1 transparent PNG

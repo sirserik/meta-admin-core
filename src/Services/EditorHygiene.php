@@ -83,6 +83,31 @@ class EditorHygiene
     }
 
     /**
+     * Narrow cleanup of rich-editor (TipTap/ProseMirror) round-trip artifacts,
+     * safe to sweep over already-good content: empty paragraphs
+     * (<p></p> / <p>&nbsp;</p> / <p><br></p>) and the <li><p>…</p></li>
+     * wrapper the editor adds around list-item content. Unlike
+     * cleanGoogleDocs() it never touches inline styles or spans.
+     */
+    public static function cleanEditorArtifacts(string $html): string
+    {
+        $h = $html;
+
+        // <li><p>single paragraph</p></li> → <li>…</li>. The lookahead keeps
+        // multi-paragraph list items intact (unwrapping those would splice
+        // stray </p><p> into the middle of the <li>).
+        $h = preg_replace(
+            '/<li([^>]*)>\s*<p[^>]*>((?:(?!<p[\s>]|<\/p>).)*)<\/p>\s*<\/li>/is',
+            '<li$1>$2</li>',
+            $h
+        );
+
+        $h = preg_replace('/<p[^>]*>\s*(?:<br\s*\/?>|&nbsp;|\s)*<\/p>/i', '', $h);
+
+        return trim($h);
+    }
+
+    /**
      * Turn runs of `<p>…;</p>` (≥ $min consecutive, semicolon-terminated —
      * the classic pasted bullet list) into a single <ul><li>…</li></ul>.
      */
