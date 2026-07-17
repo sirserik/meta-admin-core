@@ -621,6 +621,8 @@ class DefaultBlockCatalog implements BlockCatalog
                         ['key' => 'description', 'label' => 'Описание',  'type' => 'translatable_textarea'],
                         ['key' => 'url',         'label' => 'Ссылка на сайт', 'type' => 'url',
                             'placeholder' => 'https://partner.kz', 'help' => 'Если задана — карточка станет кликабельной.'],
+                        ['key' => 'photos',      'label' => 'Фотографии', 'type' => 'images',
+                            'help' => 'Мозаика фото внутри карточки; на сайте клик открывает фото во весь экран.'],
                     ],
                 ],
             ],

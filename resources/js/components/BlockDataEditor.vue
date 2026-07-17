@@ -56,7 +56,7 @@ function getArray(key) {
 
 function addItem(field) {
     const blank = {};
-    for (const f of (field.item_fields || [])) blank[f.key] = '';
+    for (const f of (field.item_fields || [])) blank[f.key] = (f.type === 'images' ? [] : '');
     setArray(field.key, [...getArray(field.key), blank]);
 }
 
@@ -141,6 +141,50 @@ async function pickFile(e, onSet) {
         onSet(res);
     } catch (err) { alert('Ошибка загрузки: ' + err.message); }
     finally { e.target.value = ''; }
+}
+
+// ===== type: 'images' — список картинок внутри записи массива =====
+// Хранится как массив строк (URL или относительный путь). Загрузка —
+// сразу несколько файлов, порядок правится стрелками.
+function rowImages(field, i, subKey) {
+    const v = getArray(field.key)[i]?.[subKey];
+    if (Array.isArray(v)) return v;
+    return (typeof v === 'string' && v) ? [v] : [];
+}
+function addRowImages(field, i, subKey, urls) {
+    updateRow(field, i, subKey, [...rowImages(field, i, subKey), ...urls]);
+}
+function removeRowImage(field, i, subKey, pi) {
+    const imgs = rowImages(field, i, subKey).slice();
+    imgs.splice(pi, 1);
+    updateRow(field, i, subKey, imgs);
+}
+function moveRowImage(field, i, subKey, pi, dir) {
+    const imgs = rowImages(field, i, subKey).slice();
+    const pj = pi + dir;
+    if (pj < 0 || pj >= imgs.length) return;
+    [imgs[pi], imgs[pj]] = [imgs[pj], imgs[pi]];
+    updateRow(field, i, subKey, imgs);
+}
+async function pickImages(e, onAdd) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const urls = [];
+    try {
+        for (const file of files) {
+            const { url } = await doUpload(props.uploadUrl, file);
+            urls.push(url);
+        }
+    } catch (err) { alert('Ошибка загрузки: ' + err.message); }
+    finally { e.target.value = ''; }
+    if (urls.length) onAdd(urls);
+}
+// Превью: абсолютные URL/пути как есть, «голый» относительный путь —
+// через префикс медиа (legacy-сайты хранят 'dir/file.jpg' → /media/…).
+function previewSrc(url) {
+    if (typeof url !== 'string' || !url) return '';
+    if (/^(https?:)?\/\//.test(url) || url.startsWith('/')) return thumbSrc(url);
+    return thumbSrc('/media/' + url);
 }
 
 // ===== Поворот загруженной картинки =====
@@ -391,6 +435,38 @@ function openPreview(url, filename) {
                                             <i class="fas fa-rotate-right"></i>
                                         </button>
                                     </div>
+                                </div>
+
+                                <div v-else-if="sub.type === 'images'" class="space-y-2">
+                                    <div v-if="rowImages(field, i, sub.key).length" class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        <div v-for="(img, pi) in rowImages(field, i, sub.key)" :key="pi"
+                                            class="group relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                                            <img :src="previewSrc(img)" class="w-full h-24 object-cover" loading="lazy">
+                                            <div class="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 py-1 bg-black/55 opacity-0 group-hover:opacity-100 transition">
+                                                <button type="button" @click="moveRowImage(field, i, sub.key, pi, -1)" :disabled="pi === 0"
+                                                    class="p-1 text-white/90 hover:text-white disabled:opacity-30" title="Левее">
+                                                    <i class="fas fa-arrow-left text-xs"></i>
+                                                </button>
+                                                <button type="button" @click="moveRowImage(field, i, sub.key, pi, 1)" :disabled="pi === rowImages(field, i, sub.key).length - 1"
+                                                    class="p-1 text-white/90 hover:text-white disabled:opacity-30" title="Правее">
+                                                    <i class="fas fa-arrow-right text-xs"></i>
+                                                </button>
+                                                <button v-if="isRotatableImage(img)" type="button" @click="rotateImage(img)"
+                                                    class="p-1 text-white/90 hover:text-white" title="Повернуть на 90°">
+                                                    <i class="fas fa-rotate-right text-xs"></i>
+                                                </button>
+                                                <button type="button" @click="removeRowImage(field, i, sub.key, pi)"
+                                                    class="p-1 text-red-300 hover:text-red-400" title="Удалить фото">
+                                                    <i class="fas fa-trash text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <label class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-md text-sm cursor-pointer text-gray-700 dark:text-gray-200">
+                                        <i class="fas fa-upload text-xs"></i> Добавить фото
+                                        <input type="file" accept="image/*" multiple class="hidden"
+                                            @change="pickImages($event, urls => addRowImages(field, i, sub.key, urls))">
+                                    </label>
                                 </div>
 
                                 <div v-else-if="sub.type === 'file'" class="space-y-2">
