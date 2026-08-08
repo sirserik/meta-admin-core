@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader.vue';
 import LocaleTabs from '../../components/LocaleTabs.vue';
 import TranslatableField from '../../components/TranslatableField.vue';
 import SimpleField from '../../components/SimpleField.vue';
+import RepeaterField from '../../components/RepeaterField.vue';
 
 const props = defineProps({
     title: String,
@@ -276,7 +277,15 @@ const hasTranslatableAnywhere = computed(() =>
                         <div v-if="sec.plain.length" :class="sec.translatable.length ? 'pt-4 border-t border-gray-100 dark:border-gray-700' : ''">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <template v-for="a in sec.plain" :key="a.name">
-                                    <SimpleField v-if="isFieldVisible(a)"
+                                    <div v-if="isFieldVisible(a) && a.type === 'array'" class="sm:col-span-2">
+                                        <RepeaterField
+                                            :name="a.name" :label="a.label" :help="a.help"
+                                            :item-fields="a.item_fields || []"
+                                            :add-label="a.add_label || 'Добавить'"
+                                            :errors="form.errors"
+                                            v-model="form[a.name]" />
+                                    </div>
+                                    <SimpleField v-else-if="isFieldVisible(a)"
                                         :name="a.name" :type="a.type" :label="a.label"
                                         :required="a.required" :placeholder="a.placeholder"
                                         :options="a.options || []" :help="a.help"
@@ -324,7 +333,13 @@ const hasTranslatableAnywhere = computed(() =>
                     </h3>
                     <div class="space-y-4">
                         <template v-for="a in sec.items" :key="a.name">
-                            <SimpleField v-if="isFieldVisible(a)"
+                            <RepeaterField v-if="isFieldVisible(a) && a.type === 'array'"
+                                :name="a.name" :label="a.label" :help="a.help"
+                                :item-fields="a.item_fields || []"
+                                :add-label="a.add_label || 'Добавить'"
+                                :errors="form.errors"
+                                v-model="form[a.name]" />
+                            <SimpleField v-else-if="isFieldVisible(a)"
                                 :name="a.name" :type="a.type" :label="a.label"
                                 :required="a.required" :placeholder="a.placeholder"
                                 :options="a.options || []" :help="a.help"

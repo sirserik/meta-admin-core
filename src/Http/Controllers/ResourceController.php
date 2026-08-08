@@ -402,6 +402,15 @@ class ResourceController extends Controller
             'datetime-local' => "{$base}|date",
             'boolean'   => "nullable|boolean",
             'icon'      => "{$base}|string|max:100",
+            // Повторяющаяся группа (RepeaterField). Колонка модели должна быть
+            // json или иметь 'array' в $casts — иначе Eloquent сохранит "Array".
+            'array'     => "{$base}|array",
+            // Картинка/файл хранятся путём, а не загрузкой формы: сам файл
+            // уходит на /admin/upload/* ещё до сабмита.
+            'image', 'file' => "{$base}|string|max:2000",
+            // Многострочный текст: лимит по умолчанию был те же 500 знаков, что
+            // и у однострочного поля, и длинный список молча не сохранялся.
+            'textarea'  => "{$base}|string|max:" . ($a['max'] ?? 20000),
             'select'    => isset($a['options']) && $a['options']
                 ? "{$base}|in:" . implode(',', array_column(is_callable($a['options']) ? call_user_func($a['options']) : $a['options'], 'value'))
                 : "{$base}|string",
