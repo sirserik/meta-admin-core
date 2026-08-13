@@ -300,12 +300,128 @@ function openPreview(url, filename) {
     if (!url) return;
     previewRef.value?.open(url, filename || '');
 }
+
+// ===== Ключи data, которых нет в схеме типа =====
+//
+// Form.vue при наличии схемы прячет сырой JSON, поэтому всё, что схема не
+// объявила, раньше было не видно и правилось только через tinker (на ETU
+// таких ключей набралось под сотню: badge, stats, button1_text, benefits…).
+// Достраиваем виджет по форме самого значения — схема остаётся источником
+// правды для порядка и подписей, а «хвост» больше не теряется.
+
+const LONG_TEXT = 90;
+
+const isI18nMap = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
+    && Object.keys(v).length > 0 && Object.keys(v).every(k => props.locales.includes(k));
+
+/** Виджет для скалярного значения; null — форма не скалярная. */
+function inferScalar(key, v) {
+    if (v === null || v === undefined) return { key, type: 'text' };
+    if (typeof v === 'boolean') return { key, type: 'checkbox' };
+    if (typeof v === 'number') return { key, type: 'number' };
+    if (typeof v === 'string') return { key, type: v.length > LONG_TEXT ? 'textarea' : 'text' };
+    if (isI18nMap(v)) {
+        const long = Object.values(v).some(s => typeof s === 'string' && s.length > LONG_TEXT);
+        return { key, type: long ? 'translatable_textarea' : 'translatable' };
+    }
+    return null;
+}
+
+function inferField(key, v) {
+    const scalar = inferScalar(key, v);
+    if (scalar) return { label: key, inferred: true, ...scalar };
+
+    // Массив однородных записей → обычный репитер. Набор подполей собираем
+    // по всем записям: в первой строке значение может быть null.
+    if (Array.isArray(v) && v.length && v.every(r => r !== null && typeof r === 'object' && !Array.isArray(r))) {
+        const sample = {};
+        for (const row of v) {
+            for (const k of Object.keys(row)) {
+                if (!(k in sample) || sample[k] === null || sample[k] === undefined) sample[k] = row[k];
+            }
+        }
+        const subs = Object.entries(sample).map(([k, sv]) => inferScalar(k, sv));
+        if (subs.every(Boolean)) {
+            return { key, label: key, inferred: true, type: 'array', item_fields: subs.map(s => ({ ...s, label: s.key })) };
+        }
+    }
+
+    // Всё остальное (вложенные объекты, массивы массивов) — JSON-поле.
+    return { key, label: key, inferred: true, type: 'json' };
+}
+
+// Виджет обязан подходить форме значения. Схема описывает намерение, но
+// данные накапливались годами: там, где схема говорит `text`, а в блоке лежит
+// карта {ru,kk,en}, в поле рисовался «[object Object]», и сохранение схлопывало
+// перевод в одну строку. Поэтому объявленный тип чиним по фактическому значению.
+const TRANSLATABLE_OF = { textarea: 'translatable_textarea', file: 'translatable_file' };
+const toTranslatable = (type) => TRANSLATABLE_OF[type] || 'translatable';
+
+function adaptField(field, value) {
+    let out = field;
+
+    if (value !== undefined && value !== null) {
+        if (field.type === 'array' && !Array.isArray(value)) {
+            return { ...inferField(field.key, value), label: field.label };
+        }
+        if (field.type !== 'array' && typeof value === 'object' && !Array.isArray(value)) {
+            out = isI18nMap(value)
+                ? (String(field.type).startsWith('translatable') ? field : { ...field, type: toTranslatable(field.type) })
+                : { ...inferField(field.key, value), label: field.label };
+        }
+    }
+
+    // Колонки репитера: тип колонки один на все записи, поэтому переводим её,
+    // если карта {ru,kk,en} встретилась хоть в одной строке.
+    if (out.type === 'array' && Array.isArray(value) && out.item_fields?.length) {
+        const item_fields = out.item_fields.map((sub) => {
+            if (String(sub.type).startsWith('translatable')) return sub;
+            const anyMap = value.some(r => r !== null && typeof r === 'object' && isI18nMap(r[sub.key]));
+            return anyMap ? { ...sub, type: toTranslatable(sub.type) } : sub;
+        });
+        if (item_fields.some((s, i) => s !== out.item_fields[i])) out = { ...out, item_fields };
+    }
+
+    return out;
+}
+
+const fields = computed(() => {
+    const items = props.schema?.items || [];
+    const known = new Set(items.map(f => f.key));
+    const declared = items.map(f => adaptField(f, data.value[f.key]));
+    const extra = Object.keys(data.value)
+        .filter(k => !known.has(k))
+        .map(k => inferField(k, data.value[k]));
+    return [...declared, ...extra];
+});
+
+// ===== type: 'json' — редактирование значения как JSON =====
+// Черновик держим отдельно, иначе повторная сериализация на каждый символ
+// переформатирует текст и уводит курсор.
+const jsonDraft = ref({});
+const jsonError = ref({});
+const jsonText = (key) => (jsonDraft.value[key] ?? (data.value[key] === undefined ? '' : JSON.stringify(data.value[key], null, 2)));
+function setJson(key, raw) {
+    jsonDraft.value = { ...jsonDraft.value, [key]: raw };
+    if (raw.trim() === '') {
+        jsonError.value = { ...jsonError.value, [key]: '' };
+        setField(key, null);
+        return;
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        jsonError.value = { ...jsonError.value, [key]: '' };
+        setField(key, parsed);
+    } catch (e) {
+        jsonError.value = { ...jsonError.value, [key]: e.message };
+    }
+}
 </script>
 
 <template>
     <div class="space-y-5">
         <!-- Locale picker: only shown if any schema field is translatable. -->
-        <div v-if="(schema.items || []).some(f => f.item_fields?.some(s => s.type?.startsWith('translatable')) || (f.type || '').startsWith('translatable'))"
+        <div v-if="fields.some(f => f.item_fields?.some(s => s.type?.startsWith('translatable')) || (f.type || '').startsWith('translatable'))"
              class="inline-flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 text-xs">
             <button v-for="loc in locales" :key="loc" type="button" @click="activeLocale = loc"
                 class="px-3 py-1.5 rounded-md transition-colors"
@@ -316,7 +432,7 @@ function openPreview(url, filename) {
             </button>
         </div>
 
-        <template v-for="field in (schema.items || [])" :key="field.key">
+        <template v-for="field in fields" :key="field.key">
             <!-- Array-of-records -->
             <div v-if="field.type === 'array'" class="border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-700">
@@ -324,6 +440,8 @@ function openPreview(url, filename) {
                         <i class="fas fa-layer-group text-gray-400 text-sm"></i>
                         <h4 class="font-medium text-sm text-gray-900 dark:text-white">{{ field.label }}</h4>
                         <span class="text-xs text-gray-400">({{ getArray(field.key).length }})</span>
+                        <span v-if="field.inferred" class="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-[10px] text-gray-500 dark:text-gray-400"
+                            title="Ключа нет в схеме типа блока — поля собраны по данным">вне схемы</span>
                     </div>
                     <button type="button" @click="addItem(field)"
                         class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 inline-flex items-center gap-1">
@@ -577,9 +695,37 @@ function openPreview(url, filename) {
 
             <!-- Scalar top-level fields -->
             <div v-else>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ field.label }}</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ field.label }}
+                    <span v-if="field.inferred" class="ml-1.5 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-[10px] font-normal text-gray-500 dark:text-gray-400"
+                        title="Ключа нет в схеме типа блока — поле собрано по данным">вне схемы</span>
+                </label>
 
-                <textarea v-if="field.type === 'textarea'" rows="3"
+                <label v-if="field.type === 'checkbox'" class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input type="checkbox" :checked="data[field.key] === true"
+                        @change="e => setField(field.key, e.target.checked)"
+                        class="rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500">
+                    {{ data[field.key] === true ? 'включено' : 'выключено' }}
+                </label>
+
+                <select v-else-if="field.type === 'select'"
+                    :value="data[field.key] ?? ''"
+                    @change="e => setField(field.key, e.target.value)"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                    <option v-for="opt in (field.options || [])" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+
+                <div v-else-if="field.type === 'json'" class="space-y-1">
+                    <textarea rows="6" spellcheck="false"
+                        :value="jsonText(field.key)"
+                        @input="e => setJson(field.key, e.target.value)"
+                        class="w-full px-3 py-2 border rounded-lg text-xs font-mono bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"
+                        :class="jsonError[field.key] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'"></textarea>
+                    <p v-if="jsonError[field.key]" class="text-xs text-red-600">Невалидный JSON: {{ jsonError[field.key] }}</p>
+                    <p v-else class="text-xs text-gray-400">Вложенная структура — правится как JSON.</p>
+                </div>
+
+                <textarea v-else-if="field.type === 'textarea'" rows="3"
                     :value="data[field.key] ?? ''"
                     @input="e => setField(field.key, e.target.value)"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"></textarea>

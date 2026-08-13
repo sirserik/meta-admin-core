@@ -345,6 +345,18 @@ function onPickerOpen() {
                             :class="dataError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'"></textarea>
                         <p v-if="dataError" class="text-sm text-red-500">{{ dataError }}</p>
                     </template>
+
+                    <!-- Тот же JSON рядом с визуальным редактором: аварийный выход,
+                         если форму значения не получилось разложить на виджеты. -->
+                    <details v-if="currentSchema" class="border-t border-gray-200 dark:border-gray-700 pt-3">
+                        <summary class="cursor-pointer text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 select-none">
+                            <i class="fas fa-code mr-1"></i>Показать JSON целиком
+                        </summary>
+                        <textarea v-model="form.blockData" rows="14" spellcheck="false"
+                            class="mt-2 w-full font-mono text-xs px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"
+                            :class="dataError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'"></textarea>
+                        <p v-if="dataError" class="text-sm text-red-500">{{ dataError }}</p>
+                    </details>
                 </div>
 
                 <div v-show="activeTab === 'settings'" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-2">
