@@ -139,14 +139,19 @@ if [[ -z "$DB_DATABASE" ]]; then
     exit 1
 fi
 
-rows="$(fetch_rows 2>&1)"
+# Keep the streams apart: a client may warn on stderr (locale, TLS, version
+# skew) while succeeding, and those lines must never be mistaken for rows.
+db_err="$(mktemp)"
+rows="$(fetch_rows 2>"$db_err")"
 rc=$?
 
 if (( rc != 0 )); then
     log "ERR could not read ${TABLE} (${DB_CONNECTION}, exit ${rc}) — allow-list left as is (emergency addresses ensured)"
-    log "ERR db said: $(printf '%s' "$rows" | tr '\n' ' ' | cut -c1-300)"
+    log "ERR db said: $(tr '\n' ' ' < "$db_err" | cut -c1-300)"
+    rm -f "$db_err"
     exit 1
 fi
+rm -f "$db_err"
 
 while IFS= read -r ip; do
     ip="$(echo "$ip" | tr -d '[:space:]')"

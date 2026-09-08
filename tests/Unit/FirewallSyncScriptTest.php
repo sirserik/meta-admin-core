@@ -84,6 +84,20 @@ class FirewallSyncScriptTest extends TestCase
         $this->assertStringContainsString('SKIP invalid ip from db', $out);
     }
 
+    public function test_client_warnings_on_stderr_are_not_read_as_rows(): void
+    {
+        $this->fakeUfw(['37.99.0.0/16']);
+        $this->fakePsql(
+            rows: ['10.0.0.5'],
+            stderr: "perl: warning: Setting locale failed.\nLANG = \"C.UTF-8\"",
+        );
+
+        $out = $this->runSync();
+
+        $this->assertSame(['10.0.0.5'], $this->ufwCalls('allow'));
+        $this->assertStringNotContainsString('SKIP invalid ip from db', $out, 'предупреждения клиента идут мимо разбора строк');
+    }
+
     public function test_missing_db_name_touches_nothing(): void
     {
         $this->fakeUfw(['37.99.0.0/16', '203.0.113.9']);
@@ -137,6 +151,10 @@ class FirewallSyncScriptTest extends TestCase
         $body = $exit === 0
             ? 'printf "%s" ' . escapeshellarg(implode("\n", $rows) . ($rows === [] ? '' : "\n"))
             : 'echo ' . escapeshellarg($stderr) . ' >&2';
+
+        if ($exit === 0 && $stderr !== '') {
+            $body = 'echo ' . escapeshellarg($stderr) . ' >&2' . "\n" . $body;
+        }
 
         $this->writeBin('psql', "#!/bin/bash\n{$body}\nexit {$exit}\n");
     }
