@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.17.1] — 2026-09-08
+
+### Added
+- `admin-core:firewall-sync-script --path=<файл>` — пишет скрипт сам (режим
+  0700) вместо печати в stdout. Через `> файл` в него утекает всё, что PHP
+  напечатал раньше команды: на PHP 8.5 `config/database.php` выдаёт
+  `Deprecated: Constant PDO::MYSQL_ATTR_SSL_CA…`, и эти строки оказывались над
+  шебангом — крон запускал битый скрипт.
+
 ## [1.17.0] — 2026-09-08
 
 ### Fixed

@@ -27,7 +27,8 @@ use Meta\AdminCore\Models\FirewallRule;
 class FirewallSyncScriptCommand extends Command
 {
     protected $signature = 'admin-core:firewall-sync-script
-                            {--emergency= : Override emergency addresses, comma-separated (default: admin-core.firewall.emergency_ip)}';
+                            {--emergency= : Override emergency addresses, comma-separated (default: admin-core.firewall.emergency_ip)}
+                            {--path= : Write the script to this file (mode 0700) instead of stdout}';
 
     protected $description = 'Печатает root-скрипт синхронизации ufw для FirewallFeature (значения сайта вшиты, креды БД читаются из .env в рантайме)';
 
@@ -67,6 +68,18 @@ class FirewallSyncScriptCommand extends Command
             '{{TABLE}}'         => (string) config('admin-core.firewall.table', 'firewall_rules'),
             '{{COMMENT}}'       => (string) config('admin-core.firewall.ufw_comment', 'admin-core-allowlist'),
         ]);
+
+        // Writing the file ourselves beats `> file`: anything PHP prints before
+        // the command runs — a deprecation notice from a config file, a warning
+        // from an extension — lands in the redirect too and leaves the script
+        // with garbage above its shebang.
+        if ($path = (string) $this->option('path')) {
+            $files->put($path, $script);
+            $files->chmod($path, 0700);
+            $this->info("Скрипт записан: {$path} (режим 0700)");
+
+            return self::SUCCESS;
+        }
 
         // Raw script to stdout so it can be piped straight into a file.
         $this->getOutput()->writeln($script, \Symfony\Component\Console\Output\OutputInterface::OUTPUT_RAW);

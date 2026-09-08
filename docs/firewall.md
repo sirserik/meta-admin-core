@@ -46,12 +46,16 @@ The package never performs privileged operations from PHP. Install the cron
 script **as root**:
 
 ```bash
-sudo php artisan admin-core:firewall-sync-script > /usr/local/sbin/admin-core-firewall-sync
-sudo chmod 700 /usr/local/sbin/admin-core-firewall-sync
+sudo php artisan admin-core:firewall-sync-script --path=/usr/local/sbin/admin-core-firewall-sync
 ( sudo crontab -l 2>/dev/null; \
   echo '* * * * * /usr/local/sbin/admin-core-firewall-sync >> /var/log/admin-core-firewall.log 2>&1' ) \
   | sudo crontab -
 ```
+
+`--path` writes the file (mode 0700) instead of printing it. Prefer it over
+`> file`: anything PHP prints first — a deprecation notice from a config file,
+a warning from an extension — would otherwise end up above the shebang and the
+cron job would run a broken script.
 
 The generated script has this site's values baked in (emergency addresses,
 `.env` path, table, ufw comment); **DB credentials are read from `.env` at
