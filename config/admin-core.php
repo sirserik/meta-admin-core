@@ -155,6 +155,9 @@ return [
     | script (emitted by `php artisan admin-core:firewall-sync-script`)
     | reconciles ufw with the table. `emergency_ip` is baked into that
     | script so the list can never go empty and lock you out — SET IT.
+    | It takes a comma-separated list, and a whole block beats a single
+    | address: a dynamic IP moves inside its ISP's range, and one changed
+    | octet must not cost you SSH (`37.99.0.0/16,203.0.113.7`).
     |
     | `gate` is an optional step-up middleware alias applied on top of the
     | normal admin middleware (e.g. an ops-PIN gate); null = none.
