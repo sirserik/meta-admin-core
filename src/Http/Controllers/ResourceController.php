@@ -191,6 +191,7 @@ class ResourceController extends Controller
         $this->applyAutoPublishAt($m, $config);
         $m->save();
         $this->saveTranslations($m, $data, $config);
+        $this->syncCardImage($m, $config);
 
         return redirect($this->resourceIndexUrl($resource))
             ->with('success', $config['label'] . ' создан(а)');
@@ -246,6 +247,23 @@ class ResourceController extends Controller
         }
     }
 
+    /**
+     * Обложка карточки (`card_image` в конфиге ресурса) — после сохранения,
+     * когда новый путь снимка уже в модели. Сбой картинки не мешает
+     * сохранению записи: без обложки карточка просто возьмёт снимок.
+     */
+    protected function syncCardImage(Model $m, array $config): void
+    {
+        $opt = \Meta\AdminCore\Support\CardImage::options($config);
+        if (!$opt) return;
+
+        try {
+            \Meta\AdminCore\Support\CardImage::sync($m, $opt);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
     public function update(Request $request, string $id): RedirectResponse
     {
         $resource = $this->resolveResource($request);
@@ -257,6 +275,7 @@ class ResourceController extends Controller
         $this->applyAutoPublishAt($m, $config);
         $m->save();
         $this->saveTranslations($m, $data, $config);
+        $this->syncCardImage($m, $config);
 
         return redirect($this->resourceIndexUrl($resource))
             ->with('success', 'Сохранено');

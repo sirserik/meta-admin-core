@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import Underline from '@tiptap/extension-underline';
+import { Gallery, Embed, parseVideoUrl } from '../editor/extensions.js';
 
 const props = defineProps({
     modelValue: { type: String, default: '' },
@@ -16,6 +17,8 @@ const emit = defineEmits(['update:modelValue']);
 
 const fileInput = ref(null);
 const replaceFileInput = ref(null);
+const galleryInput = ref(null);
+const galleryBusy = ref(false);
 
 const editor = useEditor({
     content: props.modelValue,
@@ -35,6 +38,8 @@ const editor = useEditor({
             allowBase64: false,
             HTMLAttributes: { class: 'tiptap-image' },
         }),
+        Gallery.configure({ upload: (file) => upload(file) }),
+        Embed,
     ],
     editorProps: {
         attributes: {
@@ -136,6 +141,36 @@ async function onImageSelected(e) {
         e.target.value = '';
     }
 }
+// ===== Галерея и видео =====
+function triggerGalleryUpload() {
+    galleryInput.value?.click();
+}
+async function onGallerySelected(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    galleryBusy.value = true;
+    try {
+        const images = [];
+        for (const f of files) images.push({ src: await upload(f), alt: '', caption: '' });
+        editor.value?.chain().focus().insertGallery(images).run();
+    } catch (err) {
+        alert('Ошибка загрузки: ' + err.message);
+    } finally {
+        galleryBusy.value = false;
+    }
+}
+function addVideo() {
+    const url = window.prompt('Ссылка на ролик (Instagram, YouTube, Vimeo):', '');
+    if (!url) return;
+    const attrs = parseVideoUrl(url);
+    if (!attrs) {
+        alert('Не похоже на ссылку Instagram, YouTube или Vimeo.');
+        return;
+    }
+    editor.value?.chain().focus().insertEmbed(attrs).run();
+}
+
 function isActive(name, attrs) {
     return editor.value?.isActive(name, attrs) ?? false;
 }
@@ -214,6 +249,11 @@ function imageWidth() {
             <button type="button" @click="addLink" :class="btn(isActive('link'))" title="Ссылка"><i class="fas fa-link"></i></button>
             <button type="button" @click="triggerImageUpload" :class="btn(false)" title="Вставить картинку"><i class="fas fa-image"></i></button>
             <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onImageSelected">
+            <button type="button" @click="triggerGalleryUpload" :class="btn(isActive('gallery'))" :disabled="galleryBusy" title="Галерея из нескольких фото">
+                <i :class="galleryBusy ? 'fas fa-spinner fa-spin' : 'fas fa-images'"></i>
+            </button>
+            <input ref="galleryInput" type="file" accept="image/*" multiple class="hidden" @change="onGallerySelected">
+            <button type="button" @click="addVideo" :class="btn(isActive('embed'))" title="Видео: Instagram, YouTube, Vimeo"><i class="fas fa-film"></i></button>
 
             <span class="w-px bg-gray-300 dark:bg-gray-600 mx-1"></span>
 
@@ -271,6 +311,25 @@ function imageWidth() {
 .tiptap-editor img[width="50%"]  { max-width: 50%; }
 .tiptap-editor img[width="75%"]  { max-width: 75%; }
 .tiptap-editor img[width="100%"] { max-width: 100%; }
+/* Галерея и видео в редакторе */
+.tiptap-gallery { margin: 1rem 0; border: 1px solid #e5e7eb; border-radius: .5rem; padding: .5rem; background: #f9fafb; }
+.tiptap-gallery.is-selected { outline: 3px solid #C41E3A; outline-offset: 2px; }
+.tiptap-gallery-head { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; color: #4b5563; margin-bottom: .5rem; cursor: grab; }
+.tiptap-gallery-actions { display: flex; gap: .25rem; }
+.tiptap-gallery button { padding: .2rem .5rem; border-radius: .25rem; font-size: .75rem; background: #fff; border: 1px solid #d1d5db; }
+.tiptap-gallery button:disabled { opacity: .4; }
+.tiptap-gallery button.danger { color: #b91c1c; }
+.tiptap-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .5rem; }
+.tiptap-gallery-item { display: flex; flex-direction: column; gap: .25rem; }
+.tiptap-editor .tiptap-gallery-item img { margin: 0; width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: .375rem; }
+.tiptap-gallery-tools { display: flex; gap: .25rem; justify-content: center; }
+.tiptap-gallery-item input { width: 100%; font-size: .75rem; padding: .2rem .4rem; border: 1px solid #d1d5db; border-radius: .25rem; background: #fff; color: #111827; }
+.tiptap-embed { display: flex; align-items: center; gap: .6rem; margin: 1rem 0; padding: .75rem 1rem; border: 1px dashed #9ca3af; border-radius: .5rem; background: #f3f4f6; color: #374151; font-size: .85rem; word-break: break-all; }
+.tiptap-embed i { font-size: 1.4rem; color: #C41E3A; }
+.tiptap-embed.ProseMirror-selectednode { outline: 3px solid #C41E3A; outline-offset: 2px; }
+.dark .tiptap-gallery, .dark .tiptap-embed { background: #1f2937; border-color: #374151; color: #d1d5db; }
+.dark .tiptap-gallery button, .dark .tiptap-gallery-item input { background: #111827; border-color: #4b5563; color: #e5e7eb; }
+
 /* Selected image — dashed outline to make selection obvious. */
 .tiptap-editor img.ProseMirror-selectednode {
     outline: 3px solid #C41E3A;

@@ -79,8 +79,15 @@ prune(){ find "$DBDIR" -name "${PREFIX}-*.sql.gz" -type f -mtime +"$KEEP_DAYS" -
          find "$FILESDIR" -name 'uploads-*.tar.gz' -type f -mtime +"$KEEP_DAYS" -delete 2>/dev/null
          find "$FILESDIR" -name 'code-*.tar.gz' -type f -mtime +"$KEEP_DAYS" -delete 2>/dev/null; }
 
+# Очередь — шаблоном в массив, потом сортировка по времени. Раньше было
+# `for f in $(ls -1tr "$REQ"/*.json)`: при пустой очереди nullglob схлопывал
+# шаблон, `ls` оставался без аргументов и печатал ТЕКУЩИЙ каталог (у cron это
+# домашний каталог root) — агент раз в минуту утаскивал оттуда файлы в done/.
 shopt -s nullglob
-for f in $(ls -1tr "$REQ"/*.json 2>/dev/null); do
+reqs=("$REQ"/*.json)
+[ ${#reqs[@]} -eq 0 ] && exit 0
+while IFS= read -r f; do
+  [ -f "$f" ] || continue
   action=$(python3 -c "import json;print(json.load(open('$f')).get('action',''))" 2>/dev/null)
   reqfile=$(python3 -c "import json;print(json.load(open('$f')).get('file',''))" 2>/dev/null)
   base=$(basename "$reqfile")
@@ -107,5 +114,5 @@ for f in $(ls -1tr "$REQ"/*.json 2>/dev/null); do
     *) write_status "$action" "$base" error "Неизвестное действие: $action" ;;
   esac
   mv "$f" "$DONE/" 2>/dev/null || rm -f "$f"
-done
+done < <(ls -1tr -- "${reqs[@]}")
 exit 0

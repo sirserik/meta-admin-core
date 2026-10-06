@@ -95,6 +95,7 @@ if (config('admin-core.routes.content_api', true)) {
     Route::prefix('api/content')->group(function () {
         Route::get('pages/{slug}',           [\Meta\AdminCore\Http\Controllers\ContentApiController::class, 'pageBySlug'])->where('slug', '[\w\-]+')->name('content-api.page');
         Route::get('{resource}',             [\Meta\AdminCore\Http\Controllers\ContentApiController::class, 'resourceList'])->where('resource', '[\w\-]+')->name('content-api.list');
+        Route::get('{resource}/facets',      [\Meta\AdminCore\Http\Controllers\ContentApiController::class, 'resourceFacets'])->where('resource', '[\w\-]+')->name('content-api.facets');
         Route::get('{resource}/{idOrSlug}',  [\Meta\AdminCore\Http\Controllers\ContentApiController::class, 'resourceShow'])->where('resource', '[\w\-]+')->name('content-api.show');
     });
 }

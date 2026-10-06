@@ -146,6 +146,8 @@ class AdminCoreServiceProvider extends ServiceProvider
                 \Meta\AdminCore\Console\Commands\TranslationsSplitCommand::class,
                 \Meta\AdminCore\Console\Commands\RevisionsPruneCommand::class,
                 \Meta\AdminCore\Console\Commands\MakeAdminCommand::class,
+                \Meta\AdminCore\Console\Commands\FindMentionsCommand::class,
+                \Meta\AdminCore\Console\Commands\MakeCardsCommand::class,
             ]);
         }
 

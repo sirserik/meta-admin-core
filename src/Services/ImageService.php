@@ -213,4 +213,156 @@ class ImageService
             return $path;
         }
     }
+
+    /* ------------------------------------------------------------------ */
+    /* Пропорция снимка и обложка карточки                                 */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Путь из БД или из HTML → путь внутри диска public, иначе null.
+     * Понимает `news/x.jpg`, `/storage/news/x.jpg`, `storage/…`, `/media/…`.
+     * Внешние адреса и попытки выйти из каталога (`..`) отклоняются.
+     */
+    public function publicPath(?string $path): ?string
+    {
+        if (!$path || preg_match('#^(https?:)?//#i', $path)) return null;
+        $clean = ltrim(preg_replace('#^/?(storage/|media/)+#', '', $path), '/');
+        if ($clean === '' || str_contains($clean, '..')) return null;
+
+        return Storage::disk('public')->exists($clean) ? $clean : null;
+    }
+
+    /**
+     * Ширина / высота снимка (3 знака) или null. Кэш по пути и размеру файла:
+     * замена файла под тем же именем даёт новую запись, а не старое число.
+     */
+    public function ratio(?string $path): ?float
+    {
+        $clean = $this->publicPath($path);
+        if (!$clean) return null;
+
+        $abs = Storage::disk('public')->path($clean);
+        $key = 'admin-core:image-ratio:' . md5($clean . ':' . @filesize($abs));
+
+        return \Illuminate\Support\Facades\Cache::rememberForever($key, function () use ($abs) {
+            $size = @getimagesize($abs);
+            return $size && $size[1] > 0 ? round($size[0] / $size[1], 3) : null;
+        });
+    }
+
+    /**
+     * Горизонтальная обложка карточки рядом с исходником: `<имя>-wide.jpg`.
+     *
+     * Сайтам присылают вертикальные сторис и афиши, а плитка в ленте
+     * горизонтальная — обычный кроп оставляет от них полоску с головами или
+     * режет заголовок афиши. Поэтому:
+     *   - снимок и так широкий (≥ 0.8 от целевой пропорции) → кроп по центру;
+     *   - иначе → снимок целиком по высоте, по бокам он же, размытый и
+     *     притемнённый. Ничего не отрезается.
+     * Апскейла нет: маленький исходник даёт обложку своего размера.
+     * Только GD — Intervention не нужен. Возвращает путь на диске public.
+     */
+    public function makeCard(string $path, int $width = 1600, int $height = 860): ?string
+    {
+        $clean = $this->publicPath($path);
+        if (!$clean) return null;
+
+        $abs = Storage::disk('public')->path($clean);
+        $src = $this->gdRead($abs);
+        if (!$src) return null;
+
+        $sw = imagesx($src);
+        $sh = imagesy($src);
+        $target = $width / $height;
+
+        if ($sw / $sh >= $target * 0.8) {
+            // Кроп по центру под целевую пропорцию; холст не больше вырезки.
+            [$cw, $ch] = $sw / $sh > $target
+                ? [(int) round($sh * $target), $sh]
+                : [$sw, (int) round($sw / $target)];
+            $w = min($width, $cw);
+            $h = max(1, (int) round($w / $target));
+            $card = imagecreatetruecolor($w, $h);
+            imagecopyresampled($card, $src, 0, 0, intdiv($sw - $cw, 2), intdiv($sh - $ch, 2), $w, $h, $cw, $ch);
+        } else {
+            // Холст не выше исходника.
+            $h = min($height, $sh);
+            $w = (int) round($h * $target);
+            $card = imagecreatetruecolor($w, $h);
+
+            // Фон: тот же снимок по ширине (видна средняя полоса), размытый
+            // и притемнённый. Размываем только видимую полосу — целиком
+            // вертикальная сторис в 1600 px шириной съела бы сотню мегабайт.
+            $bandH = (int) round($h * $sw / $w);
+            $bg = $this->gdBlurred($src, 0, intdiv($sh - $bandH, 2), $sw, $bandH, $w, $h);
+            imagecopy($card, $bg, 0, 0, 0, 0, $w, $h);
+            imagefilter($card, IMG_FILTER_BRIGHTNESS, -38);
+
+            // Снимок целиком по высоте, по центру.
+            $fw = (int) round($sw * $h / $sh);
+            imagecopyresampled($card, $src, intdiv($w - $fw, 2), 0, 0, 0, $fw, $h, $sw, $sh);
+        }
+
+        $dir = dirname($clean);
+        $name = pathinfo($clean, PATHINFO_FILENAME);
+        $out = ($dir === '.' ? '' : $dir . '/') . $name . '-wide.jpg';
+
+        imageinterlace($card, true);
+        ob_start();
+        imagejpeg($card, null, 82);
+        Storage::disk('public')->put($out, (string) ob_get_clean());
+
+        return $out;
+    }
+
+    /**
+     * Сильное размытие средствами GD: вырезку ($sx,$sy,$sw,$sh) уменьшить
+     * в 16 раз, несколько проходов гауссом, потом увеличивать вдвое
+     * с размытием на каждом шаге — одним прыжком получаются квадраты.
+     *
+     * @return \GdImage  холст $w×$h
+     */
+    protected function gdBlurred($src, int $sx, int $sy, int $sw, int $sh, int $w, int $h)
+    {
+        $cw = max(2, intdiv($w, 16));
+        $ch = max(2, intdiv($h, 16));
+        $cur = imagecreatetruecolor($cw, $ch);
+        imagecopyresampled($cur, $src, 0, 0, $sx, $sy, $cw, $ch, $sw, $sh);
+        for ($i = 0; $i < 4; $i++) imagefilter($cur, IMG_FILTER_GAUSSIAN_BLUR);
+
+        while ($cw < $w || $ch < $h) {
+            $nw = min($w, $cw * 2);
+            $nh = min($h, $ch * 2);
+            $next = imagecreatetruecolor($nw, $nh);
+            imagecopyresampled($next, $cur, 0, 0, 0, 0, $nw, $nh, $cw, $ch);
+            imagefilter($next, IMG_FILTER_GAUSSIAN_BLUR);
+            [$cur, $cw, $ch] = [$next, $nw, $nh];
+        }
+
+        return $cur;
+    }
+
+    /** @return \GdImage|null */
+    protected function gdRead(string $abs)
+    {
+        $type = @getimagesize($abs)[2] ?? null;
+        $img = match ($type) {
+            IMAGETYPE_JPEG => @imagecreatefromjpeg($abs),
+            IMAGETYPE_PNG  => @imagecreatefrompng($abs),
+            IMAGETYPE_GIF  => @imagecreatefromgif($abs),
+            IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($abs) : false,
+            default        => false,
+        };
+        if (!$img) return null;
+
+        // Прозрачный PNG/WebP — на белом, иначе фон станет чёрным.
+        if (in_array($type, [IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_WEBP], true)) {
+            $flat = imagecreatetruecolor(imagesx($img), imagesy($img));
+            imagefill($flat, 0, 0, imagecolorallocate($flat, 255, 255, 255));
+            imagecopy($flat, $img, 0, 0, 0, 0, imagesx($img), imagesy($img));
+            $img = $flat;
+        }
+
+        return $img;
+    }
 }

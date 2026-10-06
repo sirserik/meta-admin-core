@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Meta\AdminCore\Facades\AdminCore;
 use Meta\AdminCore\Models\PageBlock;
+use Meta\AdminCore\Services\ImageService;
+use Meta\AdminCore\Support\ResourceQuery;
 
 /**
  * Read-only Content API. Exposes the CMS payload as JSON so frontend
@@ -59,17 +61,11 @@ class ContentApiController extends Controller
         $model = $config['model'];
 
         $perPage = (int) min(max((int) $request->input('per_page', 20), 1), 100);
-        $query = $model::query();
 
-        // Default to only published rows when the model has a status column.
-        if (in_array('status', (new $model)->getFillable(), true)) {
-            $query->where('status', 'published');
-        }
-        if (in_array('is_published', (new $model)->getFillable(), true)) {
-            $query->where('is_published', true);
-        }
+        // Опубликованные + ?q= (поиск на любом языке), ?category=, ?year=, ?sort=oldest.
+        $query = ResourceQuery::filtered($config, $request->query());
 
-        // Optional taxonomy filters — only apply when the model uses Taxable.
+        // Таксономии — только для моделей с Taxable.
         if (in_array(\Meta\AdminCore\Concerns\Taxable::class, class_uses_recursive($model) ?: [], true)) {
             // /api/content/articles?tag=interview,opinion
             if ($tags = $request->query('tag')) {
@@ -97,6 +93,18 @@ class ContentApiController extends Controller
         ]);
     }
 
+    /**
+     * GET /api/content/{resource}/facets — счётчики для панели фильтров:
+     * {total, categories: {slug: n}, years: {2026: n}}.
+     */
+    public function resourceFacets(string $resource): JsonResponse
+    {
+        $config = AdminCore::getResource($resource);
+        abort_unless($config && isset($config['model']), 404);
+
+        return response()->json(ResourceQuery::facets($config));
+    }
+
     public function resourceShow(Request $request, string $resource, string $idOrSlug): JsonResponse
     {
         $config = AdminCore::getResource($resource);
@@ -105,11 +113,12 @@ class ContentApiController extends Controller
         $locale = $this->resolveLocale($request);
         /** @var class-string<\Illuminate\Database\Eloquent\Model> $model */
         $model = $config['model'];
-        $query = $model::query();
+        // Черновик по прямому адресу тоже не отдаём.
+        $query = ResourceQuery::published($model::query(), $model);
 
         // Prefer slug lookup when the table has one — cleaner URLs.
         $record = in_array('slug', (new $model)->getFillable(), true)
-            ? $query->where('slug', $idOrSlug)->orWhere('id', $idOrSlug)->first()
+            ? $query->where(fn ($w) => $w->where('slug', $idOrSlug)->when(ctype_digit($idOrSlug), fn ($x) => $x->orWhere('id', (int) $idOrSlug)))->first()
             : $query->where('id', $idOrSlug)->first();
 
         if (!$record) return response()->json(['message' => 'Not found'], 404);
@@ -179,6 +188,12 @@ class ContentApiController extends Controller
                 }
                 $attrs['terms'] = $grouped;
             }
+        }
+
+        // Пропорция снимка — чтобы фронт сразу, ещё на сервере, выбрал форму
+        // карточки (широкая / квадратная / вертикальная) без прыжка вёрстки.
+        if (($imageField = $config['image_field'] ?? null) && !empty($record->{$imageField})) {
+            $attrs[$imageField . '_ratio'] = app(ImageService::class)->ratio($record->{$imageField});
         }
 
         return $attrs;
