@@ -37,7 +37,9 @@ class Audit
             ActivityLog::create([
                 'user_id'     => $userId ?? $request?->user()?->getAuthIdentifier(),
                 'action'      => $action,
-                'model_type'  => $model ? get_class($model) : null,
+                // На части сайтов model_type объявлен NOT NULL (ETU) —
+                // для входов и прочих событий без модели пишем пустую строку.
+                'model_type'  => $model ? get_class($model) : '',
                 'model_id'    => $model?->getKey(),
                 'description' => mb_substr($description, 0, 250),
                 'changes'     => $changes,
