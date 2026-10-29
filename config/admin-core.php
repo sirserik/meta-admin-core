@@ -277,4 +277,37 @@ return [
         'max_kb'     => 51200,
         'attachable' => [],   // e.g. [App\Models\Article::class, App\Models\News::class]
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Опасные инструменты (выключены по умолчанию)
+    |--------------------------------------------------------------------------
+    | zip_backup — старый ZIP-бэкап /admin/backup: database.sqlite + весь
+    |   storage/app/public в одном архиве, который отдаётся в браузер.
+    |   С утёкшим паролем админа это готовая выгрузка всего сайта. Для
+    |   резервных копий есть /admin/backups (серверный агент, FEATURE_BACKUP).
+    | web_updater — /admin/updates запускает composer update и migrate
+    |   прямо из веб-запроса. Обновляйте пакет через деплой.
+    */
+    'zip_backup'  => env('ADMIN_CORE_ZIP_BACKUP', false),
+    'web_updater' => env('ADMIN_CORE_WEB_UPDATER', false),
+
+    /*
+    | Пароли администраторов: минимум символов (буквы в обоих регистрах и
+    | цифры обязательны, словарные пароли запрещены). set_defaults — сделать
+    | это правило Password::defaults() для всего сайта (смена пароля в
+    | профиле, сброс пароля).
+    */
+    'password' => [
+        'min'          => env('ADMIN_CORE_PASSWORD_MIN', 12),
+        'set_defaults' => env('ADMIN_CORE_PASSWORD_DEFAULTS', true),
+    ],
+
+    /*
+    | Журнал действий: кроме правок, пишем входы, неудачные попытки входа
+    | и открытие заявок, вопросов ректору, скачивание серверных бэкапов.
+    */
+    'audit' => [
+        'enabled' => env('ADMIN_CORE_AUDIT', true),
+    ],
 ];

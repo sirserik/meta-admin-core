@@ -43,10 +43,13 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     // pointed here before the headless migration; keep backwards compat.
     Route::redirect('/dashboard', '/' . $prefix, 302);
 
-    // System updates (package-level updater)
-    Route::get(   '/updates',       [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'index'])->name('updates.index');
-    Route::post(  '/updates/check', [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'check'])->name('updates.check');
-    Route::post(  '/updates/run',   [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'run'])->name('updates.run');
+    // System updates (package-level updater). Выключено по умолчанию:
+    // composer update из веб-запроса — см. admin-core.web_updater.
+    if (config('admin-core.web_updater', false)) {
+        Route::get(   '/updates',       [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'index'])->name('updates.index');
+        Route::post(  '/updates/check', [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'check'])->name('updates.check');
+        Route::post(  '/updates/run',   [\Meta\AdminCore\Http\Controllers\UpdateController::class, 'run'])->name('updates.run');
+    }
 
     // Feature toggles
     Route::get(  '/features',            [\Meta\AdminCore\Http\Controllers\FeaturesController::class, 'index'])->name('features.index');
@@ -132,11 +135,14 @@ Route::middleware($middleware)->prefix($prefix)->name('admin.')->group(function 
     Route::get( '/cache',            [\Meta\AdminCore\Http\Controllers\CacheController::class, 'index'])->name('cache.index');
     Route::post('/cache/flush',      [\Meta\AdminCore\Http\Controllers\CacheController::class, 'flush'])->name('cache.flush');
 
-    // SQLite + storage backups
-    Route::get(   '/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'index'])->name('backup.index');
-    Route::post(  '/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'create'])->name('backup.create');
-    Route::get(   '/backup/download', [\Meta\AdminCore\Http\Controllers\BackupController::class, 'download'])->name('backup.download');
-    Route::delete('/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'destroy'])->name('backup.destroy');
+    // Старый ZIP-бэкап (SQLite + storage/app/public). Выключен по умолчанию —
+    // см. admin-core.zip_backup; резервные копии делает /admin/backups.
+    if (config('admin-core.zip_backup', false)) {
+        Route::get(   '/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'index'])->name('backup.index');
+        Route::post(  '/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'create'])->name('backup.create');
+        Route::get(   '/backup/download', [\Meta\AdminCore\Http\Controllers\BackupController::class, 'download'])->name('backup.download');
+        Route::delete('/backup',          [\Meta\AdminCore\Http\Controllers\BackupController::class, 'destroy'])->name('backup.destroy');
+    }
 
     // Inbound leads (admission + consultation requests)
     Route::get(   '/leads',             [\Meta\AdminCore\Http\Controllers\LeadController::class, 'index'])->name('leads.index');

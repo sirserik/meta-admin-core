@@ -55,6 +55,7 @@ class RectorQuestionController extends Controller
 
     public function show(RectorQuestion $rectorQuestion): Response
     {
+        \Meta\AdminCore\Support\Audit::log('viewed', 'Открыл вопрос ректору #' . $rectorQuestion->id, $rectorQuestion);
         return Inertia::render('RectorQuestions/Show', [
             'title'      => 'Вопрос #' . $rectorQuestion->id,
             'question'   => $this->presentDetail($rectorQuestion),

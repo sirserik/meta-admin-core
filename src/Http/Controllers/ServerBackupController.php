@@ -85,6 +85,9 @@ class ServerBackupController extends Controller
         [$dir, $base] = $this->resolve($request);
         abort_unless($dir !== null && is_file($dir . '/' . $base), 404);
 
+        $this->audit('download', $base, $request);
+        \Meta\AdminCore\Support\Audit::log('downloaded', 'Скачал серверный бэкап ' . $base);
+
         return response()->download($dir . '/' . $base);
     }
 

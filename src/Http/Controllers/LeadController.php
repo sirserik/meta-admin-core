@@ -27,6 +27,9 @@ class LeadController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->only(['search', 'status', 'type']);
+        \Meta\AdminCore\Support\Audit::log('viewed', 'Открыл список заявок'
+            . ($request->integer('page') > 1 ? ', стр. ' . $request->integer('page') : '')
+            . (array_filter($filters) ? ', фильтр: ' . json_encode(array_filter($filters), JSON_UNESCAPED_UNICODE) : ''));
 
         $query = Lead::query()->latest();
         if (!empty($filters['status'])) $query->where('status', $filters['status']);
@@ -62,6 +65,7 @@ class LeadController extends Controller
     public function show(int $id): Response
     {
         $lead = Lead::findOrFail($id);
+        \Meta\AdminCore\Support\Audit::log('viewed', 'Открыл заявку #' . $lead->id, $lead);
         return Inertia::render('Leads/Show', [
             'title'    => 'Заявка #' . $lead->id,
             'lead'     => $this->presentDetail($lead),

@@ -64,7 +64,7 @@ class UserController extends Controller
         $data = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
+            'password' => ['required', 'string', \Meta\AdminCore\Support\AdminPassword::rule()],
             'role'     => 'required|exists:roles,name',
         ]);
 
@@ -98,7 +98,7 @@ class UserController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'role'     => 'required|exists:roles,name',
-            'password' => 'nullable|string|min:8',
+            'password' => ['nullable', 'string', \Meta\AdminCore\Support\AdminPassword::rule()],
         ]);
 
         $user->name  = $data['name'];

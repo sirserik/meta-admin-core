@@ -47,6 +47,11 @@ class ActivityLog extends Model
             'unpublished' => 'Снял с публикации',
             'login'       => 'Вошёл в систему',
             'logout'      => 'Вышел из системы',
+            'login_failed'   => 'Неудачный вход',
+            'login_lockout'  => 'Вход заблокирован',
+            'password_reset' => 'Сбросил пароль',
+            'viewed'      => 'Открыл',
+            'downloaded'  => 'Скачал',
             default       => $this->action,
         };
     }

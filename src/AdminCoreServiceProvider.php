@@ -49,6 +49,8 @@ class AdminCoreServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerSecurityHooks();
+
         // Stable morph alias defaults — keep `translations.translatable_type`
         // (and any other morph column) free of FQCN drift even when the
         // consumer ships its own classes for the same row (e.g. App\Models\
@@ -224,7 +226,9 @@ class AdminCoreServiceProvider extends ServiceProvider
                 $core->menuItem('Вопросы ректору', "/{$prefix}/rector-questions", 'fa-circle-question',  'Контент', 70);
                 $core->menuItem('Заявки',     "/{$prefix}/leads",         'fa-inbox',            'Система', 90);
                 $core->menuItem('Активность', "/{$prefix}/activity",      'fa-clock-rotate-left','Система', 91);
-                $core->menuItem('Бэкапы',     "/{$prefix}/backup",        'fa-box-archive',      'Система', 92);
+                if (config('admin-core.zip_backup', false)) {
+                    $core->menuItem('Бэкапы',     "/{$prefix}/backup",        'fa-box-archive',      'Система', 92);
+                }
                 $core->menuItem('Настройки',  "/{$prefix}/settings",      'fa-sliders',          'Система', 93);
                 $core->menuItem('Общие',      "/{$prefix}/site-settings", 'fa-gears',            'Система', 93);
                 $core->menuItem('Меню',       "/{$prefix}/menu",          'fa-bars',             'Система', 94);
@@ -233,7 +237,9 @@ class AdminCoreServiceProvider extends ServiceProvider
                 $core->menuItem('Тема сайта', "/{$prefix}/theme",    'fa-palette',         'Система', 95);
                 $core->menuItem('Кэш',        "/{$prefix}/cache",    'fa-broom',           'Система', 96);
                 $core->menuItem('Фичи',       "/{$prefix}/features", 'fa-toggle-on',       'Система', 98);
-                $core->menuItem('Обновления', "/{$prefix}/updates",  'fa-cloud-arrow-down','Система', 99);
+                if (config('admin-core.web_updater', false)) {
+                    $core->menuItem('Обновления', "/{$prefix}/updates",  'fa-cloud-arrow-down','Система', 99);
+                }
                 $core->menuItem('Webhooks',   "/{$prefix}/webhooks", 'fa-bolt',             'Система', 97);
                 $core->menuItem('Словари',    "/{$prefix}/taxonomies", 'fa-tags',          'Контент', 60);
                 $core->menuItem('Формы',      "/{$prefix}/forms",      'fa-square-check', 'Контент', 65);
@@ -294,5 +300,57 @@ class AdminCoreServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../resources/views/app.blade.php' => resource_path('views/admin-core/app.blade.php'),
         ], 'admin-core-views');
+    }
+
+    /**
+     * Журнал входов и требования к паролю. Входы пишутся по событиям
+     * Laravel, поэтому ловятся любые формы входа сайта (/login из Breeze,
+     * /admin/login пакета), а не только наша.
+     */
+    private function registerSecurityHooks(): void
+    {
+        if (config('admin-core.password.set_defaults', true)) {
+            \Illuminate\Validation\Rules\Password::defaults(fn () => \Meta\AdminCore\Support\AdminPassword::rule());
+        }
+
+        // У многих сайтов нет lang/ru/validation.php — тогда вместо текста
+        // ошибки пароля в форме видно ключ вроде «validation.password.mixed».
+        // Добавляем строки, только если сайт не задал свои.
+        $translator = $this->app['translator'];
+        $lines = [
+            'validation.min.string'        => 'Поле должно быть не короче :min символов.',
+            'validation.password.letters'  => 'Пароль должен содержать буквы.',
+            'validation.password.mixed'    => 'Пароль должен содержать строчные и заглавные буквы.',
+            'validation.password.numbers'  => 'Пароль должен содержать цифры.',
+            'validation.password.symbols'  => 'Пароль должен содержать спецсимволы.',
+            'validation.password.uncompromised' => 'Этот пароль встречается в утечках. Придумайте другой.',
+        ];
+        foreach (['ru', 'kk'] as $locale) {
+            $missing = array_filter($lines, fn ($k) => ! $translator->hasForLocale($k, $locale), ARRAY_FILTER_USE_KEY);
+            if ($missing) {
+                $translator->addLines($missing, $locale);
+            }
+        }
+
+        $events = $this->app['events'];
+
+        $events->listen(\Illuminate\Auth\Events\Login::class, function ($e) {
+            \Meta\AdminCore\Support\Audit::log('login', 'Вход: ' . ($e->user->email ?? '#' . $e->user->getAuthIdentifier()) . ($e->remember ? ' (запомнить)' : ''), userId: $e->user->getAuthIdentifier());
+        });
+        $events->listen(\Illuminate\Auth\Events\Failed::class, function ($e) {
+            $login = (string) ($e->credentials['email'] ?? $e->credentials['login'] ?? '');
+            \Meta\AdminCore\Support\Audit::log('login_failed', 'Неудачный вход: ' . mb_substr($login, 0, 120) . ($e->user ? '' : ' (нет такого пользователя)'), userId: $e->user?->getAuthIdentifier());
+        });
+        $events->listen(\Illuminate\Auth\Events\Lockout::class, function ($e) {
+            \Meta\AdminCore\Support\Audit::log('login_lockout', 'Вход заблокирован по лимиту попыток: ' . mb_substr((string) $e->request->input('email'), 0, 120));
+        });
+        $events->listen(\Illuminate\Auth\Events\Logout::class, function ($e) {
+            if ($e->user) {
+                \Meta\AdminCore\Support\Audit::log('logout', 'Выход: ' . ($e->user->email ?? '#' . $e->user->getAuthIdentifier()), userId: $e->user->getAuthIdentifier());
+            }
+        });
+        $events->listen(\Illuminate\Auth\Events\PasswordReset::class, function ($e) {
+            \Meta\AdminCore\Support\Audit::log('password_reset', 'Сброс пароля: ' . ($e->user->email ?? '#' . $e->user->getAuthIdentifier()), userId: $e->user->getAuthIdentifier());
+        });
     }
 }
