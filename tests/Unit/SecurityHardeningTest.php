@@ -38,6 +38,35 @@ class SecurityHardeningTest extends TestCase
         }
     }
 
+    public function test_content_api_is_closed_for_resources_by_default(): void
+    {
+        $core = new \Meta\AdminCore\AdminCore;
+        $core->resource('management', ['model' => 'App\\Models\\Management']);
+        $core->resource('news', ['model' => 'App\\Models\\News', 'api' => true]);
+
+        $this->assertFalse($core->getResource('management')['api']);
+        $this->assertTrue($core->getResource('news')['api']);
+    }
+
+    public function test_every_content_api_action_checks_the_api_flag(): void
+    {
+        $src = file_get_contents(__DIR__ . '/../../src/Http/Controllers/ContentApiController.php');
+
+        // Ресурс берётся только через apiResource(), который проверяет 'api'.
+        $this->assertSame(1, substr_count($src, 'AdminCore::getResource('));
+        $this->assertSame(3, substr_count($src, '$this->apiResource($resource)'));
+        $this->assertStringContainsString("!empty(\$config['api'])", $src);
+
+        $routes = file_get_contents(__DIR__ . '/../../routes/public.php');
+        $this->assertStringContainsString("->middleware('throttle:' . config('admin-core.content_api_throttle'", $routes);
+    }
+
+    public function test_hidden_rows_are_not_published(): void
+    {
+        $src = file_get_contents(__DIR__ . '/../../src/Support/ResourceQuery.php');
+        $this->assertStringContainsString("if (self::has(\$table, 'is_active')) \$query->where('is_active', true);", $src);
+    }
+
     public function test_dangerous_tools_are_off_by_default(): void
     {
         $config = require __DIR__ . '/../../config/admin-core.php';

@@ -92,15 +92,20 @@ class ResourceQuery
 
     /* ------------------------------------------------------------------ */
 
-    /** Опубликованные: скоуп модели `published()`, если есть, иначе по колонкам. */
+    /**
+     * Опубликованные: скоуп модели `published()`, если есть, иначе по колонкам.
+     * Выключенные «скрыть с сайта» (is_active = false) не отдаются в любом случае.
+     */
     public static function published(Builder $query, string $model): Builder
     {
-        if (method_exists($model, 'scopePublished')) {
-            return $query->published();
-        }
         $table = (new $model)->getTable();
-        if (self::has($table, 'status')) $query->where('status', 'published');
-        if (self::has($table, 'is_published')) $query->where('is_published', true);
+        if (method_exists($model, 'scopePublished')) {
+            $query->published();
+        } else {
+            if (self::has($table, 'status')) $query->where('status', 'published');
+            if (self::has($table, 'is_published')) $query->where('is_published', true);
+        }
+        if (self::has($table, 'is_active')) $query->where('is_active', true);
 
         return $query;
     }

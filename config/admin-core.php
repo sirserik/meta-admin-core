@@ -55,6 +55,10 @@ return [
         'content_api' => env('ADMIN_CORE_ROUTE_CONTENT_API', true),
     ],
 
+    // Лимит /api/content/* с одного IP: «запросов,минут». Ресурсы в этой API
+    // закрыты, пока у них не задан 'api' в AdminCore::resource().
+    'content_api_throttle' => env('ADMIN_CORE_CONTENT_API_THROTTLE', '120,1'),
+
     /*
     |--------------------------------------------------------------------------
     | Image upload endpoint used by Tiptap (upload-handler).

@@ -204,6 +204,12 @@ class AdminCore
         // «отметил Опубликовано, забыл дату — публичные scope `published()`
         // не подхватили запись».
         $config['auto_publish_at'] = $config['auto_publish_at'] ?? false;
+        // api — отдавать ли ресурс через публичный /api/content/{name}.
+        // По умолчанию НЕТ: раньше наружу уходил любой ресурс админки со
+        // всеми колонками (взлом META 28.10.2026). Включается явно:
+        //   'api' => true                                // все поля модели
+        //   'api' => ['fields' => ['title', 'slug']]     // только эти (+ id)
+        $config['api']           = $config['api']           ?? false;
         $config['route_key']     = $config['route_key']     ?? null; // null = use model default
         $config['per_page']      = $config['per_page']      ?? 15;
         $config['order_by']      = $config['order_by']      ?? ['created_at' => 'desc'];

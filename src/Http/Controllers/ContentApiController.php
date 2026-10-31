@@ -18,17 +18,17 @@ use Meta\AdminCore\Support\ResourceQuery;
  *   GET /api/content/pages/{slug}
  *     → { page: {slug, …}, blocks: [{block_type, title, ..., data}] }
  *
- *   GET /api/content/{resource}            (any AdminCore resource)
+ *   GET /api/content/{resource}            (only resources with 'api' set)
  *   GET /api/content/{resource}/{id}
  *     → paginated list OR a single record, localized fields collapsed
  *       into the requested locale (?locale=ru|kk|en, defaults to
  *       config('app.locale')).
  *
  * Responses respect the `Accept-Language` header as a fallback for
- * `?locale=`. Published status is enforced — draft rows don't leak.
+ * `?locale=`. Drafts and hidden rows (is_active=false) don't leak.
  *
- * No auth by default (public read). Consumers can wrap the route
- * group with their own middleware (`auth:sanctum`, `throttle`, …).
+ * A resource is closed (404) unless registered with 'api' => true or
+ * 'api' => ['fields' => [...]]. No auth, throttled per IP.
  */
 class ContentApiController extends Controller
 {
@@ -53,8 +53,7 @@ class ContentApiController extends Controller
 
     public function resourceList(Request $request, string $resource): JsonResponse
     {
-        $config = AdminCore::getResource($resource);
-        abort_unless($config && isset($config['model']), 404);
+        $config = $this->apiResource($resource);
 
         $locale = $this->resolveLocale($request);
         /** @var class-string<\Illuminate\Database\Eloquent\Model> $model */
@@ -99,16 +98,14 @@ class ContentApiController extends Controller
      */
     public function resourceFacets(string $resource): JsonResponse
     {
-        $config = AdminCore::getResource($resource);
-        abort_unless($config && isset($config['model']), 404);
+        $config = $this->apiResource($resource);
 
         return response()->json(ResourceQuery::facets($config));
     }
 
     public function resourceShow(Request $request, string $resource, string $idOrSlug): JsonResponse
     {
-        $config = AdminCore::getResource($resource);
-        abort_unless($config && isset($config['model']), 404);
+        $config = $this->apiResource($resource);
 
         $locale = $this->resolveLocale($request);
         /** @var class-string<\Illuminate\Database\Eloquent\Model> $model */
@@ -130,6 +127,15 @@ class ContentApiController extends Controller
     }
 
     /* ------------------------------------------------------------------ */
+
+    /** Конфиг ресурса, открытого для API; закрытый и незнакомый — 404. */
+    protected function apiResource(string $resource): array
+    {
+        $config = AdminCore::getResource($resource);
+        abort_unless($config && isset($config['model']) && !empty($config['api']), 404);
+
+        return $config;
+    }
 
     protected function resolveLocale(Request $request): string
     {
@@ -192,8 +198,16 @@ class ContentApiController extends Controller
 
         // Пропорция снимка — чтобы фронт сразу, ещё на сервере, выбрал форму
         // карточки (широкая / квадратная / вертикальная) без прыжка вёрстки.
-        if (($imageField = $config['image_field'] ?? null) && !empty($record->{$imageField})) {
+        $imageField = $config['image_field'] ?? null;
+        if ($imageField && !empty($record->{$imageField})) {
             $attrs[$imageField . '_ratio'] = app(ImageService::class)->ratio($record->{$imageField});
+        }
+
+        // 'api' => ['fields' => [...]] — наружу только перечисленное.
+        $only = is_array($config['api'] ?? null) ? ($config['api']['fields'] ?? null) : null;
+        if (is_array($only)) {
+            $keep = array_merge(['id', 'terms'], $only, $imageField ? [$imageField . '_ratio'] : []);
+            $attrs = array_intersect_key($attrs, array_flip($keep));
         }
 
         return $attrs;

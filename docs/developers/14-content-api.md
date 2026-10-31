@@ -5,7 +5,8 @@ SSG, headless-сайт).
 
 ## Базовый URL
 
-Монтируется в `routes/public.php` пакета — без префикса, без auth.
+Монтируется в `routes/public.php` пакета — без префикса, без auth, с лимитом
+запросов с одного IP (`admin-core.content_api_throttle`, по умолчанию `120,1`).
 
 ```
 GET /api/content/pages/{slug}
@@ -48,7 +49,25 @@ Response:
 
 ## `/api/content/{resource}`
 
-Пагинированный список зарегистрированного ресурса.
+Пагинированный список ресурса, **открытого для API**. Ресурсы закрыты по
+умолчанию (404): раньше наружу уходил любой ресурс админки со всеми
+колонками, и через это выкачали сотрудников, включая скрытых. Открывай
+явно и по возможности с белым списком полей:
+
+```php
+AdminCore::resource('news', [
+    // …
+    'api' => ['fields' => ['slug', 'title', 'excerpt', 'content', 'image', 'published_at']],
+]);
+
+AdminCore::resource('partners', [
+    // …
+    'api' => true,   // все колонки модели (кроме $hidden) — только если в таблице нет ничего лишнего
+]);
+```
+
+С `fields` в ответе остаются `id`, перечисленные поля, `terms` и
+`<image_field>_ratio`.
 
 ```
 GET /api/content/articles?page=2&per_page=20&locale=kk
@@ -116,13 +135,13 @@ Response:
 
 404, если не найдено или status ≠ published.
 
-## Автоматическая фильтрация драфтов
+## Автоматическая фильтрация драфтов и скрытых
 
-Если у модели в `$fillable` есть `status` — запросы автоматически
-фильтруются по `status='published'`. Если `is_published` — по `true`.
+- скоуп модели `published()`, если он есть; иначе `status='published'` и
+  `is_published=true` (что из этого есть в таблице);
+- **всегда** `is_active=true`, если такая колонка есть («скрыть с сайта»).
 
-Это значит: admin-только контент (черновики, архивные) **не утекает**
-через API.
+Действует в списке, в `/facets` и в одной записи по прямому id/slug.
 
 ## Локализация
 
@@ -157,16 +176,11 @@ AdminCore::resource('articles', [
 
 ## Authentication / rate limiting
 
-API публичный **по умолчанию**. Если нужно:
-
-- **Throttling** — в `routes/web.php` своего приложения переопредели
-  group:
-
-  ```php
-  Route::middleware(['throttle:api'])->group(function () {
-      Route::get('/api/content/{resource}', [...]);  // ← здесь уже ограничено
-  });
-  ```
+Открытые ресурсы читаются без входа. Лимит с одного IP задаёт
+`ADMIN_CORE_CONTENT_API_THROTTLE` (`запросов,минут`, по умолчанию `120,1`).
+Если фронт с SSR ходит в API со своего сервера — подними лимит, все его
+запросы идут с одного IP. Выключить API целиком:
+`ADMIN_CORE_ROUTE_CONTENT_API=false`.
 
 - **Auth via Sanctum** — оберни роуты `auth:sanctum` middleware. Не
   забудь, что тогда SPA должен слать `Authorization: Bearer …`.
